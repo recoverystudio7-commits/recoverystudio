@@ -1,0 +1,15 @@
+{
+  "name": "recovery-studio",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Sitio y panel de reservas de Recovery Studio (Node.js sin dependencias).",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "reset-totp": "node scripts/reset-totp.mjs"
+  },
+  "engines": {
+    "node": "22.x"
+  }
+}
