@@ -4,6 +4,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { remoteEnabled, readRemoteDb, writeRemoteDb, acquireLock } from './lib/store.js';
+import { channelStatus, deliver } from './lib/notify.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = path.join(__dirname, 'public');
@@ -97,6 +98,34 @@ function checkPassword(password, user) {
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
 
+/* ------------------------- Política de contraseñas ------------------ */
+
+const PASSWORD_MIN = { admin: 16, user: 4 };
+const COMMON_PASSWORDS = [
+  '123456', '12345678', '123456789', 'password', 'contrasena', 'contraseña',
+  'qwerty', 'recoverystudio', 'recovery', 'admin123', 'iloveyou', '111111',
+  'abc123', '000000', 'dragon', 'letmein',
+];
+
+function passwordProblem(password, role = 'user') {
+  const value = String(password || '');
+  const min = PASSWORD_MIN[role] || PASSWORD_MIN.user;
+  if (value.length < min) {
+    return role === 'admin'
+      ? `La contraseña de administrador debe tener al menos ${min} caracteres.`
+      : `La contraseña debe tener al menos ${min} caracteres.`;
+  }
+  if (value.length > 200) return 'La contraseña es demasiado larga.';
+  const lower = value.toLowerCase();
+  if (COMMON_PASSWORDS.some((item) => lower === item || lower.includes(item))) {
+    return 'Esa contraseña es demasiado predecible. Elige una distinta.';
+  }
+  if (/^(.)\1+$/.test(value)) return 'La contraseña no puede repetir el mismo carácter.';
+  return '';
+}
+
+const clp = (n) => `$${new Intl.NumberFormat('es-CL').format(round(n))}`;
+
 const SCHEDULE = {
   0: [],
   1: ['08:00', '09:00', '10:00', '11:00', '12:00', '15:00', '16:00', '17:00', '18:00', '19:00'],
@@ -120,6 +149,8 @@ function defaultSettings() {
     },
     retentionRate: 0.1525,
     cancellationHours: 12,
+    notifyEmail: process.env.NOTIFY_EMAIL || process.env.STUDIO_EMAIL || 'recoverystudio7@gmail.com',
+    notify: { email: true, whatsapp: true },
     schedule: SCHEDULE,
     sessionSecret: crypto.randomBytes(32).toString('hex'),
   };
@@ -139,6 +170,7 @@ function seedDb() {
     totpEnabled: false,
     totpSecret: '',
     ...hashPassword(adminPassword),
+    passwordUpdatedAt: nowISO(),
     createdAt: nowISO(),
   };
 
@@ -202,11 +234,13 @@ function seedDb() {
     reviews: [],
     expenses: [],
     boletas: [],
+    notifications: [],
   };
 }
 
 function ensureCollections(next) {
   next.settings = { ...defaultSettings(), ...(next.settings || {}) };
+  next.settings.notify = { email: true, whatsapp: true, ...(next.settings.notify || {}) };
   next.users ||= [];
   next.services ||= [];
   next.plans ||= [];
@@ -217,6 +251,7 @@ function ensureCollections(next) {
   next.reviews ||= [];
   next.expenses ||= [];
   next.boletas ||= [];
+  next.notifications ||= [];
   return next;
 }
 
@@ -695,6 +730,57 @@ function publicConfig() {
   };
 }
 
+/* --------------------------- Notificaciones ------------------------- */
+
+const NOTIFICATION_LIMIT = 300;
+
+function notifyPreferences() {
+  return channelStatus(db.settings);
+}
+
+/**
+ * Guarda la notificación en la bandeja del panel y la envía por los canales
+ * configurados. Nunca lanza: un fallo de envío no afecta la operación.
+ */
+async function notifyEvent(event, title, body, meta = {}) {
+  const record = {
+    id: uid(),
+    event,
+    title,
+    body,
+    meta,
+    read: false,
+    createdAt: nowISO(),
+    delivery: {},
+  };
+  db.notifications.unshift(record);
+  if (db.notifications.length > NOTIFICATION_LIMIT) db.notifications.length = NOTIFICATION_LIMIT;
+  scheduleSave();
+
+  const channels = notifyPreferences();
+  if (channels.email.enabled || channels.whatsapp.enabled) {
+    try {
+      record.delivery = await deliver({
+        subject: `[${db.settings.studioName}] ${title}`,
+        text: `${title}\n\n${body}\n\n${new Date().toLocaleString('es-CL')}`,
+        settings: db.settings,
+      });
+    } catch (err) {
+      record.delivery = { error: err.message };
+    }
+    scheduleSave();
+  }
+  return record;
+}
+
+function humanDate(date) {
+  const value = String(date || '');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+  const [y, m, d] = value.split('-').map(Number);
+  return new Intl.DateTimeFormat('es-CL', { weekday: 'long', day: 'numeric', month: 'long' })
+    .format(new Date(y, m - 1, d));
+}
+
 /* ------------------------------------------------------------------ */
 /*  Router                                                             */
 /* ------------------------------------------------------------------ */
@@ -736,7 +822,7 @@ route('GET', '/api/public/reviews', 'public', () => {
   return { reviews, ...reviewsSummary(db.reviews) };
 });
 
-route('POST', '/api/public/reviews', 'public', ({ body, req, user, res }) => {
+route('POST', '/api/public/reviews', 'public', async ({ body, req, user, res }) => {
   const ip = req.socket.remoteAddress || 'ip';
   if (!rateLimit(`review:${ip}`, 4, 6 * 60 * 60 * 1000)) {
     return fail(res, 429, 'Ya recibimos una reseña desde este dispositivo. Intenta nuevamente más tarde.');
@@ -773,10 +859,13 @@ route('POST', '/api/public/reviews', 'public', ({ body, req, user, res }) => {
   };
   db.reviews.push(review);
   scheduleSave();
+  await notifyEvent('review_received', 'Nueva reseña por moderar', `${name} dejó una reseña de ${rating} estrellas${service ? ` sobre ${service}` : ''}.\n\n"${comment.slice(0, 220)}${comment.length > 220 ? '…' : ''}"`, {
+    type: 'review', id: review.id, name, rating, service,
+  });
   sendJson(res, 201, { ok: true, pending: true, review: publicReview(review) });
 });
 
-route('POST', '/api/auth/register', 'public', ({ body, res, req }) => {
+route('POST', '/api/auth/register', 'public', async ({ body, res, req }) => {
   const ip = req.socket.remoteAddress || 'ip';
   if (!rateLimit(`register:${ip}`, 6, 30 * 60 * 1000)) return fail(res, 429, 'Demasiados intentos. Intenta más tarde.');
 
@@ -796,10 +885,13 @@ route('POST', '/api/auth/register', 'public', ({ body, res, req }) => {
   };
   db.users.push(user);
   scheduleSave();
+  await notifyEvent('user_registered', 'Nuevo cliente registrado', `${name} creó su cuenta.\nCorreo: ${email}${phone ? `\nTeléfono: ${phone}` : ''}`, {
+    type: 'user', id: user.id, name, email,
+  });
   sendJson(res, 201, { user: publicUser(user) }, { 'Set-Cookie': sessionCookie(user) });
 });
 
-route('POST', '/api/auth/login', 'public', ({ body, res, req }) => {
+route('POST', '/api/auth/login', 'public', async ({ body, res, req }) => {
   const email = lower(body.email);
   const password = String(body.password || '');
   const code = clean(body.code, 10);
@@ -828,6 +920,14 @@ route('POST', '/api/auth/login', 'public', ({ body, res, req }) => {
   }
 
   clearRate(key);
+  user.lastLoginAt = nowISO();
+  user.lastLoginIp = ip;
+  scheduleSave();
+  if (user.role === 'admin') {
+    await notifyEvent('admin_login', 'Inicio de sesión de administrador', `Se inició sesión en el panel.\nIP: ${ip}`, {
+      type: 'security', id: user.id, email: user.email, ip,
+    });
+  }
   sendJson(res, 200, { user: publicUser(user) }, { 'Set-Cookie': sessionCookie(user) });
 });
 
@@ -909,7 +1009,7 @@ route('GET', '/api/availability', 'auth', ({ query, res }) => {
   sendJson(res, 200, { date, slots: data, closed: false });
 });
 
-route('POST', '/api/bookings', 'auth', ({ body, user, res }) => {
+route('POST', '/api/bookings', 'auth', async ({ body, user, res }) => {
   const service = db.services.find((s) => s.id === body.serviceId && s.active !== false);
   if (!service) return fail(res, 404, 'Servicio no disponible.');
   const date = clean(body.date, 10);
@@ -964,6 +1064,9 @@ route('POST', '/api/bookings', 'auth', ({ body, user, res }) => {
 
   db.bookings.push(booking);
   scheduleSave();
+  await notifyEvent('booking_created', 'Nueva reserva agendada', `${user.name} agendó ${service.name}.\n${humanDate(date)} a las ${time} (${modality}).\n${amount > 0 ? `Monto: ${clp(amount)}` : 'Usa sesiones de su plan.'}\nCorreo: ${user.email}`, {
+    type: 'booking', id: booking.id, userId: user.id, name: user.name, date, time, service: service.name, amount,
+  });
   sendJson(res, 201, { booking, payment });
 });
 
@@ -975,7 +1078,7 @@ route('GET', '/api/bookings', 'auth', ({ user }) => {
   return { bookings, payments };
 });
 
-route('POST', '/api/bookings/:id/reschedule', 'auth', ({ params, body, user, res }) => {
+route('POST', '/api/bookings/:id/reschedule', 'auth', async ({ params, body, user, res }) => {
   const booking = db.bookings.find((b) => b.id === params.id && b.userId === user.id);
   if (!booking) return fail(res, 404, 'Sesión no encontrada.');
   if (!canUserModify(booking)) {
@@ -993,10 +1096,13 @@ route('POST', '/api/bookings/:id/reschedule', 'auth', ({ params, body, user, res
   booking.history.push({ at: nowISO(), action: 'rescheduled', by: 'user', previous });
   booking.updatedAt = nowISO();
   scheduleSave();
+  await notifyEvent('booking_rescheduled', 'Reserva reagendada', `${user.name} reagendó ${booking.serviceName}.\nAntes: ${humanDate(previous.date)} ${previous.time}.\nAhora: ${humanDate(date)} a las ${time}.`, {
+    type: 'booking', id: booking.id, name: user.name, date, time,
+  });
   sendJson(res, 200, { booking });
 });
 
-route('POST', '/api/bookings/:id/cancel', 'auth', ({ params, user, res }) => {
+route('POST', '/api/bookings/:id/cancel', 'auth', async ({ params, user, res }) => {
   const booking = db.bookings.find((b) => b.id === params.id && b.userId === user.id);
   if (!booking) return fail(res, 404, 'Sesión no encontrada.');
   if (['attended', 'no_show', 'cancelled'].includes(booking.status)) return fail(res, 400, 'Esta sesión ya no se puede cancelar.');
@@ -1009,6 +1115,9 @@ route('POST', '/api/bookings/:id/cancel', 'auth', ({ params, user, res }) => {
   booking.updatedAt = nowISO();
   if (booking.planCharged) restorePlan(findOrder(booking.planOrderId), booking);
   scheduleSave();
+  await notifyEvent('booking_cancelled', 'Reserva cancelada', `${user.name} canceló ${booking.serviceName} del ${humanDate(booking.date)} a las ${booking.time}.`, {
+    type: 'booking', id: booking.id, name: user.name, date: booking.date, time: booking.time,
+  });
   sendJson(res, 200, { booking });
 });
 
@@ -1020,7 +1129,7 @@ route('GET', '/api/orders/mine', 'auth', ({ user }) => {
   return { orders };
 });
 
-route('POST', '/api/orders', 'auth', ({ body, user, res }) => {
+route('POST', '/api/orders', 'auth', async ({ body, user, res }) => {
   const plan = db.plans.find((p) => p.id === body.planId && p.active !== false);
   if (!plan) return fail(res, 404, 'Plan no disponible.');
   const existing = db.orders.find((o) => o.userId === user.id && o.planId === plan.id && ['pending_payment', 'review'].includes(o.status));
@@ -1040,10 +1149,13 @@ route('POST', '/api/orders', 'auth', ({ body, user, res }) => {
   db.orders.push(order);
   db.payments.push(payment);
   scheduleSave();
+  await notifyEvent('order_created', 'Nueva compra de plan', `${user.name} compró ${plan.name}.\nMonto: ${clp(plan.price)}.\nQueda pendiente de confirmar el pago.\nCorreo: ${user.email}`, {
+    type: 'order', id: order.id, userId: user.id, name: user.name, plan: plan.name, amount: plan.price,
+  });
   sendJson(res, 201, { order, payment });
 });
 
-route('POST', '/api/orders/custom', 'auth', ({ body, user, res }) => {
+route('POST', '/api/orders/custom', 'auth', async ({ body, user, res }) => {
   const name = clean(body.name, 90);
   const sessions = Math.min(100, Math.max(1, round(body.sessions || 1)));
   const description = clean(body.description, 800);
@@ -1056,6 +1168,9 @@ route('POST', '/api/orders/custom', 'auth', ({ body, user, res }) => {
   };
   db.orders.push(order);
   scheduleSave();
+  await notifyEvent('order_custom', 'Solicitud de plan a medida', `${user.name} pidió un plan a medida: ${name} (${sessions} sesiones).\n\n${description.slice(0, 260)}${description.length > 260 ? '…' : ''}\n\nCorreo: ${user.email}`, {
+    type: 'order', id: order.id, userId: user.id, name: user.name, sessions,
+  });
   sendJson(res, 201, { order });
 });
 
@@ -1072,7 +1187,7 @@ route('GET', '/api/payments/mine', 'auth', ({ user }) => {
   return { payments, bank: db.settings.bank, cancellationHours: db.settings.cancellationHours };
 });
 
-route('POST', '/api/payments/:id/transfer', 'auth', ({ params, body, user, res }) => {
+route('POST', '/api/payments/:id/transfer', 'auth', async ({ params, body, user, res }) => {
   const payment = db.payments.find((p) => p.id === params.id && p.userId === user.id);
   if (!payment) return fail(res, 404, 'Pago no encontrado.');
   if (!['pending', 'rejected'].includes(payment.status)) return fail(res, 400, 'Este pago ya no se puede actualizar.');
@@ -1089,6 +1204,9 @@ route('POST', '/api/payments/:id/transfer', 'auth', ({ params, body, user, res }
     if (order && ['pending_payment', 'review'].includes(order.status)) syncOrderStatus(order, 'review');
   }
   scheduleSave();
+  await notifyEvent('payment_informed', 'Pago informado por transferencia', `${user.name} informó el pago de ${paymentConcept(payment)}.\nMonto: ${clp(payment.amount)}.\nReferencia: ${reference}.\nRevisa y confirma en Pagos e ingresos.`, {
+    type: 'payment', id: payment.id, userId: user.id, name: user.name, amount: payment.amount, reference,
+  });
   sendJson(res, 200, { payment, message: 'Transferencia informada. El studio la revisará y confirmará.' });
 });
 
@@ -1099,7 +1217,7 @@ route('GET', '/api/routines/mine', 'auth', ({ user }) => {
   return { routines };
 });
 
-route('PATCH', '/api/me', 'auth', ({ body, user, res }) => {
+route('PATCH', '/api/me', 'auth', async ({ body, user, res }) => {
   if (body.name !== undefined) {
     const name = clean(body.name, 80);
     if (name.length < 2) return fail(res, 400, 'Ingresa tu nombre.');
@@ -1110,11 +1228,18 @@ route('PATCH', '/api/me', 'auth', ({ body, user, res }) => {
     const current = String(body.currentPassword || '');
     const next = String(body.newPassword || '');
     if (!checkPassword(current, user)) return fail(res, 400, 'La contraseña actual no es correcta.');
-    if (next.length < 4) return fail(res, 400, 'La nueva contraseña debe tener al menos 4 caracteres.');
+    const problem = passwordProblem(next, user.role);
+    if (problem) return fail(res, 400, problem, { code: 'weak_password' });
     Object.assign(user, hashPassword(next));
     user.tokenVersion = (user.tokenVersion || 0) + 1;
+    user.passwordUpdatedAt = nowISO();
     user.updatedAt = nowISO();
     scheduleSave();
+    if (user.role === 'admin') {
+      await notifyEvent('admin_password_changed', 'Contraseña de administrador actualizada', 'Se cambió la contraseña del panel y se cerraron las demás sesiones.', {
+        type: 'security', id: user.id,
+      });
+    }
     return sendJson(res, 200, { user: publicUser(user) }, { 'Set-Cookie': sessionCookie(user) });
   }
   user.updatedAt = nowISO();
@@ -1251,7 +1376,7 @@ route('POST', '/api/admin/bookings/:id/reschedule', 'admin', ({ params, body, re
   sendJson(res, 200, { booking: attachUser(booking) });
 });
 
-route('PATCH', '/api/admin/payments/:id', 'admin', ({ params, body, res }) => {
+route('PATCH', '/api/admin/payments/:id', 'admin', async ({ params, body, res }) => {
   const payment = db.payments.find((p) => p.id === params.id);
   if (!payment) return fail(res, 404, 'Pago no encontrado.');
   if (!['pending', 'review', 'confirmed', 'rejected'].includes(body.status)) return fail(res, 400, 'Estado inválido.');
@@ -1281,6 +1406,14 @@ route('PATCH', '/api/admin/payments/:id', 'admin', ({ params, body, res }) => {
     }
   }
   scheduleSave();
+  if (body.status === 'confirmed' || body.status === 'rejected') {
+    await notifyEvent(
+      body.status === 'confirmed' ? 'payment_confirmed' : 'payment_rejected',
+      body.status === 'confirmed' ? 'Pago confirmado' : 'Pago rechazado',
+      `${paymentConcept(payment)} · ${clp(payment.amount)}.\nCliente: ${paymentUser(payment)?.name || 'Sin cliente'}.\nEstado: ${body.status === 'confirmed' ? 'confirmado' : 'rechazado'}.`,
+      { type: 'payment', id: payment.id, amount: payment.amount },
+    );
+  }
   sendJson(res, 200, { payment });
 });
 
@@ -1780,12 +1913,35 @@ route('DELETE', '/api/admin/reviews/:id', 'admin', ({ params, res }) => {
 
 route('GET', '/api/admin/settings', 'admin', ({ user }) => {
   const { sessionSecret, ...safe } = db.settings;
-  return { settings: safe, totpEnabled: !!user.totpEnabled };
+  return {
+    settings: safe,
+    totpEnabled: !!user.totpEnabled,
+    channels: notifyPreferences(),
+    security: {
+      email: user.email,
+      lastLoginAt: user.lastLoginAt || null,
+      lastLoginIp: user.lastLoginIp || null,
+      passwordUpdatedAt: user.passwordUpdatedAt || null,
+      minPassword: PASSWORD_MIN.admin,
+      sessionsActive: (user.tokenVersion || 0) + 1,
+    },
+  };
 });
 
 route('PATCH', '/api/admin/settings', 'admin', ({ body, res }) => {
   if (body.studioName !== undefined) db.settings.studioName = clean(body.studioName, 80) || db.settings.studioName;
   if (body.email !== undefined) db.settings.email = lower(body.email) || db.settings.email;
+  if (body.notifyEmail !== undefined) {
+    const value = lower(body.notifyEmail);
+    if (value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return fail(res, 400, 'El correo de avisos no es válido.');
+    db.settings.notifyEmail = value || db.settings.email;
+  }
+  if (body.notify && typeof body.notify === 'object') {
+    db.settings.notify = {
+      email: body.notify.email !== false,
+      whatsapp: body.notify.whatsapp !== false,
+    };
+  }
   if (body.retentionRate !== undefined) {
     const rate = Number(body.retentionRate);
     if (!Number.isFinite(rate) || rate < 0 || rate > 0.5) return fail(res, 400, 'La retención debe estar entre 0% y 50%.');
@@ -1803,7 +1959,78 @@ route('PATCH', '/api/admin/settings', 'admin', ({ body, res }) => {
   }
   scheduleSave();
   const { sessionSecret, ...safe } = db.settings;
-  sendJson(res, 200, { settings: safe });
+  sendJson(res, 200, { settings: safe, channels: notifyPreferences() });
+});
+
+/* ------------------------ Bandeja de notificaciones ----------------- */
+
+route('GET', '/api/admin/notifications', 'admin', ({ query }) => {
+  const limit = Math.min(100, Math.max(1, round(query.get('limit') || 60)));
+  const unread = db.notifications.filter((n) => !n.read).length;
+  return {
+    notifications: db.notifications.slice(0, limit),
+    unread,
+    total: db.notifications.length,
+    channels: notifyPreferences(),
+  };
+});
+
+route('POST', '/api/admin/notifications/read', 'admin', ({ body, res }) => {
+  const ids = Array.isArray(body.ids) ? body.ids : null;
+  for (const item of db.notifications) {
+    if (!ids || ids.includes(item.id)) item.read = true;
+  }
+  scheduleSave();
+  sendJson(res, 200, { ok: true, unread: db.notifications.filter((n) => !n.read).length });
+});
+
+route('DELETE', '/api/admin/notifications/:id', 'admin', ({ params, res }) => {
+  const index = db.notifications.findIndex((n) => n.id === params.id);
+  if (index < 0) return fail(res, 404, 'Notificación no encontrada.');
+  db.notifications.splice(index, 1);
+  scheduleSave();
+  sendJson(res, 200, { ok: true, unread: db.notifications.filter((n) => !n.read).length });
+});
+
+route('POST', '/api/admin/notifications/test', 'admin', async ({ res }) => {
+  const record = await notifyEvent(
+    'test',
+    'Prueba de notificaciones',
+    'Si recibiste este mensaje, los avisos del panel están funcionando correctamente.',
+    { type: 'test' },
+  );
+  sendJson(res, 200, { ok: true, delivery: record.delivery, channels: notifyPreferences() });
+});
+
+/* ---------------------- Mantenimiento y datos demo ------------------ */
+
+route('POST', '/api/admin/maintenance/reset-data', 'admin', ({ body, user, res }) => {
+  if (!checkPassword(body.password, user)) return fail(res, 400, 'Contraseña incorrecta.');
+  if (clean(body.confirm, 20).toUpperCase() !== 'BORRAR') {
+    return fail(res, 400, 'Escribe BORRAR para confirmar la limpieza.');
+  }
+  const removed = {
+    clientes: db.users.filter((u) => u.role !== 'admin').length,
+    reservas: db.bookings.length,
+    planes: db.orders.length,
+    pagos: db.payments.length,
+    rutinas: db.routines.length,
+    resenas: db.reviews.length,
+    gastos: db.expenses.length,
+    boletas: db.boletas.length,
+    notificaciones: db.notifications.length,
+  };
+  db.users = db.users.filter((u) => u.role === 'admin');
+  db.bookings = [];
+  db.orders = [];
+  db.payments = [];
+  db.routines = [];
+  db.reviews = [];
+  db.expenses = [];
+  db.boletas = [];
+  db.notifications = [];
+  scheduleSave();
+  sendJson(res, 200, { ok: true, removed, message: 'Datos de clientes y movimientos eliminados. El catálogo y la configuración se mantienen.' });
 });
 
 route('POST', '/api/admin/totp/reset', 'admin', ({ body, user, res }) => {

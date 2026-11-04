@@ -14,6 +14,7 @@ import {
 import { pageAdminPayments, pageAdminConfig } from './admin-ops.js';
 import { pageAdminFinance, pageAdminHonorarios } from './admin-finance.js';
 import { pageAdminReviews } from './reviews.js';
+import { pageAdminNotifications } from './admin-notify.js';
 
 const TITLES = {
   '/admin': ['Dashboard', 'Ingresos, retención y agenda del studio'],
@@ -25,6 +26,7 @@ const TITLES = {
   '/admin/honorarios': ['Honorarios', 'Boletas, retención y neto'],
   '/admin/rutinas': ['Rutinas', 'Ejercicios asignados a clientes'],
   '/admin/resenas': ['Reseñas', 'Moderación de opiniones de clientes'],
+  '/admin/notificaciones': ['Notificaciones', 'Avisos de reservas, pagos y acciones'],
   '/admin/config': ['Configuración', 'Datos del studio y seguridad'],
 };
 
@@ -52,6 +54,7 @@ export function renderAdmin(path) {
   if (path === '/admin/honorarios') return run(() => pageAdminHonorarios(content));
   if (path === '/admin/rutinas') return run(() => pageAdminRoutines(content));
   if (path === '/admin/resenas') return run(() => pageAdminReviews(content));
+  if (path === '/admin/notificaciones') return run(() => pageAdminNotifications(content));
   if (path === '/admin/config') return run(() => pageAdminConfig(content));
   return run(() => pageDashboard(content));
 }

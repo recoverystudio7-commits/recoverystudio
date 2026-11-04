@@ -113,6 +113,9 @@ export async function pageAdminConfig(content) {
   const data = await api('/admin/settings');
   const s = data.settings;
   const bank = s.bank || {};
+  const channels = data.channels || {};
+  const notifyPrefs = s.notify || { email: true, whatsapp: true };
+  const security = data.security || {};
   content.innerHTML = `
     ${pageHead('Configuración', 'Datos del studio, transferencias, retención y seguridad.')}
     <form id="settings-form">
@@ -168,8 +171,38 @@ export async function pageAdminConfig(content) {
             <div><b>Correo de administrador</b><span>${esc(state.me.email)}</span></div>
             <span class="badge blue">Admin</span>
           </div>
+          <div class="security-row">
+            <div><b>Último acceso</b><span>${security.lastLoginAt ? esc(fmtDateTime(security.lastLoginAt)) : 'Sin registro'}</span></div>
+            ${security.lastLoginIp ? `<span class="badge muted" title="IP del último acceso">${esc(security.lastLoginIp)}</span>` : ''}
+          </div>
+          <div class="security-row">
+            <div><b>Contraseña</b><span>${security.passwordUpdatedAt ? `Actualizada el ${esc(fmtDateTime(security.passwordUpdatedAt))}` : 'Sin registro de cambio'}</span></div>
+            <span class="badge blue">${Number(security.minPassword) || 16}+ caracteres</span>
+          </div>
           <button class="btn ghost sm" type="button" id="reset-totp" style="margin-top:14px">${icon('smartphone')} Cambiar authenticator</button>
           <div class="form-note" style="margin-top:14px;margin-bottom:0">Guarda una copia de tu clave secreta en un lugar seguro. Si pierdes el acceso, usa el script de recuperación del servidor.</div>
+        </div>
+
+        <div class="card settings-card span-2">
+          <h3>Avisos y notificaciones</h3>
+          <p>Recibe un aviso cuando alguien agende, pague o haga una acción en la web.</p>
+          <div class="field">
+            <label for="st-notify-email">Correo para avisos</label>
+            <input class="input" id="st-notify-email" type="email" value="${esc(s.notifyEmail || s.email)}" />
+            <span class="hint">Si lo dejas vacío, se usa el correo de contacto del studio.</span>
+          </div>
+          <label class="switch-row">
+            <input type="checkbox" id="nt-email" ${notifyPrefs.email !== false ? 'checked' : ''} />
+            <span><b>Correo electrónico</b><small>${channels.email?.configured ? `Resend · ${esc(channels.email.to || '')}` : 'Falta RESEND_API_KEY en Vercel'}</small></span>
+            <span class="badge ${channels.email?.configured ? 'success' : 'muted'}">${channels.email?.configured ? 'Listo' : 'Sin configurar'}</span>
+          </label>
+          <label class="switch-row">
+            <input type="checkbox" id="nt-whatsapp" ${notifyPrefs.whatsapp !== false ? 'checked' : ''} />
+            <span><b>WhatsApp</b><small>${channels.whatsapp?.configured ? `${esc(channels.whatsapp.provider === 'twilio' ? 'Twilio' : 'CallMeBot')} · ${esc(channels.whatsapp.to || '')}` : 'Falta CALLMEBOT_PHONE y CALLMEBOT_APIKEY'}</small></span>
+            <span class="badge ${channels.whatsapp?.configured ? 'success' : 'muted'}">${channels.whatsapp?.configured ? 'Listo' : 'Sin configurar'}</span>
+          </label>
+          <button class="btn ghost sm" type="button" id="test-channels" style="margin-top:8px">${icon('send')} Enviar prueba</button>
+          <div class="form-note" style="margin-top:12px;margin-bottom:0">Las credenciales se configuran en Vercel. Mientras falten, los avisos igual quedan guardados en <a href="#/admin/notificaciones">Notificaciones</a>.</div>
         </div>
 
         <div class="card settings-card span-2" style="display:flex;justify-content:space-between;gap:16px;align-items:center;flex-wrap:wrap">
@@ -186,7 +219,11 @@ export async function pageAdminConfig(content) {
         <form id="admin-pass-form">
           <div class="form-error hidden" id="ap-error"></div>
           <div class="field"><label for="ap-current">Contraseña actual</label><input class="input" id="ap-current" type="password" autocomplete="current-password" required /></div>
-          <div class="field"><label for="ap-new">Nueva contraseña</label><input class="input" id="ap-new" type="password" minlength="4" autocomplete="new-password" required /></div>
+          <div class="field">
+            <label for="ap-new">Nueva contraseña</label>
+            <input class="input" id="ap-new" type="password" minlength="${Number(security.minPassword) || 16}" autocomplete="new-password" required />
+            <span class="hint">Mínimo ${Number(security.minPassword) || 16} caracteres. No uses palabras comunes ni datos personales.</span>
+          </div>
           <button class="btn ghost" type="submit">Actualizar contraseña</button>
         </form>
       </div>
@@ -197,9 +234,26 @@ export async function pageAdminConfig(content) {
           <a class="btn ghost sm" href="/api/admin/export/boletas.csv" download>${icon('download')} Boletas CSV</a>
           <a class="btn ghost sm" href="/api/admin/export/pagos.csv" download>${icon('download')} Pagos CSV</a>
         </div>
-        <div class="alert info" style="margin-top:16px">${icon('shield')}<div>La base de datos se guarda en <b>data/db.json</b>. Realiza copias de seguridad periódicas de ese archivo.</div></div>
+        <div class="alert info" style="margin-top:16px">${icon('shield')}<div>La base de datos se guarda en <b>Redis (Vercel)</b> o en <b>data/db.json</b> si usas el servidor local. Realiza copias de seguridad periódicas.</div></div>
         <p class="footer-note">Los CSV usan separador “;” y codificación UTF-8 con BOM para abrir correctamente en Excel.</p>
       </div>
+    </div>
+
+    <div class="card risk-card" style="margin-top:16px">
+      <h3>Zona de riesgo</h3>
+      <p>Elimina clientes, reservas, pagos, reseñas y movimientos para dejar la app sin datos de prueba. Se conservan el catálogo, la configuración y tu cuenta de administrador. Esta acción no se puede deshacer.</p>
+      <form id="reset-data-form" class="risk-form">
+        <div class="form-error hidden" id="rd-error"></div>
+        <div class="field">
+          <label for="rd-pass">Contraseña de administrador</label>
+          <input class="input" id="rd-pass" type="password" autocomplete="current-password" required />
+        </div>
+        <div class="field">
+          <label for="rd-confirm">Escribe BORRAR para confirmar</label>
+          <input class="input" id="rd-confirm" placeholder="BORRAR" autocomplete="off" required />
+        </div>
+        <button class="btn danger" type="submit">${icon('trash')} Borrar datos de prueba</button>
+      </form>
     </div>
   `;
 
@@ -216,6 +270,11 @@ export async function pageAdminConfig(content) {
         body: {
           studioName: $('#st-name').value.trim(),
           email: $('#st-email').value.trim(),
+          notifyEmail: $('#st-notify-email').value.trim(),
+          notify: {
+            email: $('#nt-email').checked,
+            whatsapp: $('#nt-whatsapp').checked,
+          },
           retentionRate: retention / 100,
           cancellationHours: hours,
           bank: {
@@ -262,6 +321,60 @@ export async function pageAdminConfig(content) {
       btn.disabled = false;
       btn.textContent = 'Actualizar contraseña';
     }
+  });
+
+  $('#test-channels')?.addEventListener('click', async (e) => {
+    const btn = e.currentTarget;
+    btn.disabled = true;
+    const original = btn.innerHTML;
+    btn.textContent = 'Enviando…';
+    try {
+      const result = await api('/admin/notifications/test', { method: 'POST' });
+      const parts = [];
+      for (const key of ['email', 'whatsapp']) {
+        const item = result.delivery?.[key];
+        if (!item) continue;
+        const label = key === 'email' ? 'correo' : 'WhatsApp';
+        parts.push(`${label}: ${item.status === 'sent' ? 'enviado' : item.status === 'failed' ? 'falló' : 'sin configurar'}`);
+      }
+      toast(parts.length ? `Prueba enviada (${parts.join(' · ')}).` : 'Prueba registrada en la bandeja.', 'info');
+    } catch (err) {
+      toast(err.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = original;
+    }
+  });
+
+  $('#reset-data-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const error = $('#rd-error');
+    error.classList.add('hidden');
+    const confirm = $('#rd-confirm').value.trim().toUpperCase();
+    confirmDialog({
+      title: 'Borrar datos de prueba',
+      message: 'Se eliminarán clientes, reservas, pagos, planes comprados, rutinas, reseñas, gastos y boletas. No se puede deshacer.',
+      confirmText: 'Sí, borrar',
+      danger: true,
+      onConfirm: async () => {
+        const btn = e.target.querySelector('button[type="submit"]');
+        btn.disabled = true;
+        btn.textContent = 'Borrando…';
+        try {
+          const result = await api('/admin/maintenance/reset-data', {
+            method: 'POST',
+            body: { password: $('#rd-pass').value, confirm },
+          });
+          toast(result.message || 'Datos eliminados.');
+          refresh();
+        } catch (err) {
+          error.textContent = err.message;
+          error.classList.remove('hidden');
+          btn.disabled = false;
+          btn.innerHTML = `${icon('trash')} Borrar datos de prueba`;
+        }
+      },
+    });
   });
 
   bindCopyButtons(content);

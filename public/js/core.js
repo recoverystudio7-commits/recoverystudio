@@ -119,6 +119,7 @@ const ICONS = {
   logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',
   check: '<path d="M20 6 9 17l-5-5"/>',
+  bell: '<path d="M18 8a6 6 0 1 0-12 0c0 7-3 8-3 8h18s-3-1-3-8"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/>',
   x: '<path d="M18 6 6 18M6 6l12 12"/>',
   arrowRight: '<path d="M5 12h14M13 6l6 6-6 6"/>',
   chevronDown: '<path d="m6 9 6 6 6-6"/>',
@@ -465,8 +466,22 @@ const ADMIN_NAV = [
   ['/admin/honorarios', 'Honorarios', 'file'],
   ['/admin/rutinas', 'Rutinas', 'activity'],
   ['/admin/resenas', 'Reseñas', 'messageSquare'],
+  ['/admin/notificaciones', 'Notificaciones', 'bell'],
   ['/admin/config', 'Configuración', 'settings'],
 ];
+
+export async function refreshNotifyBadge() {
+  try {
+    const data = await api('/admin/notifications?limit=1');
+    const badge = $('#notify-badge');
+    if (!badge) return;
+    const unread = Number(data.unread) || 0;
+    badge.textContent = unread > 99 ? '99+' : String(unread);
+    badge.classList.toggle('hidden', unread === 0);
+  } catch {
+    /* sin sesión o sin red: se reintenta en la próxima navegación */
+  }
+}
 
 export function renderShell({ kind, active, title, subtitle }) {
   const isAdmin = kind === 'admin';
@@ -510,7 +525,10 @@ export function renderShell({ kind, active, title, subtitle }) {
               <div class="topbar-sub">${esc(subtitle || '')}</div>
             </div>
           </div>
-          <div class="topbar-actions">${topAction}</div>
+          <div class="topbar-actions">
+            ${isAdmin ? `<a class="notify-bell" href="#/admin/notificaciones" aria-label="Notificaciones" title="Notificaciones">${icon('bell')}<span class="notify-badge hidden" id="notify-badge">0</span></a>` : ''}
+            ${topAction}
+          </div>
         </header>
         <main class="content" id="page-content">
           <div class="loading"><span class="spinner"></span><span>Cargando…</span></div>
@@ -524,6 +542,7 @@ export function renderShell({ kind, active, title, subtitle }) {
   $('#logout-btn')?.addEventListener('click', logout);
   $$('.sidebar-nav .nav-link').forEach((a) => a.addEventListener('click', () => shell.classList.remove('sidebar-open')));
   bindCopyButtons();
+  if (isAdmin) refreshNotifyBadge();
   return $('#page-content');
 }
 

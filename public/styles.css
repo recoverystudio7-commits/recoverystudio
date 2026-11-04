@@ -1391,3 +1391,66 @@ table.data td.muted { font-size: 12px; }
   .boleta-calc { grid-template-columns: 1fr; }
 }
 
+
+/* ======================= Notificaciones y seguridad ====================== */
+
+.notify-bell {
+  position: relative; display: inline-grid; place-items: center;
+  width: 36px; height: 36px; border-radius: 10px; color: var(--navy);
+  background: #fff; border: 1px solid var(--line); transition: background .15s, border-color .15s;
+}
+.notify-bell:hover { background: var(--blue-soft); border-color: #cfe5f7; color: var(--blue-dark); }
+.notify-bell svg { width: 18px; height: 18px; }
+.notify-badge {
+  position: absolute; top: -6px; right: -6px; min-width: 18px; height: 18px;
+  padding: 0 5px; border-radius: 999px; background: var(--danger); color: #fff;
+  font-size: 10px; font-weight: 750; display: grid; place-items: center;
+  border: 2px solid #fff; font-variant-numeric: tabular-nums;
+}
+
+.channels-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 16px; }
+.channel-card { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+.channel-card.off { background: #fbfcfd; border-style: dashed; }
+.channel-head { display: flex; align-items: center; gap: 11px; }
+.channel-head > div { flex: 1; min-width: 0; }
+.channel-head b { display: block; font-size: 13px; color: var(--navy); }
+.channel-head span { display: block; font-size: 11.5px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.channel-icon { width: 34px; height: 34px; border-radius: 10px; background: var(--blue-soft); color: var(--blue); display: grid; place-items: center; flex: none; }
+.channel-icon svg { width: 17px; height: 17px; }
+.channel-hint { margin: 10px 0 0; font-size: 11.5px; color: var(--warn); line-height: 1.5; }
+
+.tab-count { display: inline-block; margin-left: 4px; padding: 0 6px; border-radius: 999px; background: #e9eef4; color: var(--muted); font-size: 10px; font-weight: 700; }
+.tab.active .tab-count { background: var(--blue-soft); color: var(--blue-dark); }
+
+.notify-list { display: flex; flex-direction: column; }
+.notify-item { display: flex; gap: 12px; padding: 14px 18px; border-top: 1px solid var(--line); align-items: flex-start; }
+.notify-item.unread { background: #f7fbff; }
+.notify-icon { width: 36px; height: 36px; border-radius: 10px; background: #eef3f9; color: var(--navy); display: grid; place-items: center; flex: none; }
+.notify-item.unread .notify-icon { background: var(--blue-soft); color: var(--blue); }
+.notify-icon svg { width: 17px; height: 17px; }
+.notify-body { flex: 1; min-width: 0; }
+.notify-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.notify-top b { font-size: 13px; color: var(--navy); }
+.notify-tag { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); background: #eef2f6; padding: 2px 7px; border-radius: 6px; }
+.notify-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--blue); }
+.notify-body p { margin: 5px 0 7px; font-size: 12.5px; color: var(--muted); line-height: 1.55; white-space: pre-line; word-break: break-word; }
+.notify-meta { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; font-size: 11px; color: var(--muted-2); }
+
+.switch-row { display: flex; align-items: center; gap: 11px; padding: 11px 0; border-top: 1px solid var(--line); cursor: pointer; }
+.switch-row input { width: 16px; height: 16px; accent-color: var(--blue); flex: none; }
+.switch-row > span:nth-of-type(1) { flex: 1; min-width: 0; }
+.switch-row b { display: block; font-size: 12.5px; color: var(--navy); }
+.switch-row small { display: block; font-size: 11px; color: var(--muted); line-height: 1.45; word-break: break-word; }
+.switch-row .badge { flex: none; }
+
+.risk-card { border-color: #f0c7c7; background: linear-gradient(180deg, #fff, #fffafa); }
+.risk-card h3 { color: var(--danger); }
+.risk-card p { font-size: 12.5px; color: var(--muted); line-height: 1.6; max-width: 720px; }
+.risk-form { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; margin-top: 14px; }
+.risk-form .field { margin: 0; flex: 1; min-width: 190px; }
+
+@media (max-width: 760px) {
+  .channels-grid { grid-template-columns: 1fr; }
+  .risk-form { flex-direction: column; align-items: stretch; }
+  .risk-form .btn { width: 100%; }
+}

@@ -19,6 +19,8 @@ La versión Node (este repo) tiene backend real, sesiones, TOTP y persistencia e
 | Exportación CSV de pagos y boletas | ✅ | ✅ | — |
 | Finanzas: gastos, utilidad, margen, 6 meses | ✅ | ✅ | — |
 | Honorarios: boletas y resumen mensual | ✅ | ✅ | — |
+| Notificaciones internas y avisos por correo/WhatsApp | ✅ | ❌ | — |
+| Seguridad admin: clave 16+, último acceso y reset de datos | ✅ | ❌ | — |
 | Cotizaciones de empresas | ❌ | ✅ | **Portar** |
 | Reseñas públicas con moderación | ✅ (Redis) | ✅ (Supabase) | — |
 | Maximales (PRs) | ❌ | ✅ | **Portar** |
