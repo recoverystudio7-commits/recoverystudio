@@ -995,3 +995,278 @@ table.data.payments-table .row-actions .btn { padding: 6px 9px; font-size: 11px;
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; scroll-behavior: auto !important; }
 }
+
+/* ========================================================================== */
+/*  Reseñas, sauna y PWA                                                     */
+/* ========================================================================== */
+
+.site-nav a {
+  color: #43586d; font-size: 13.5px; font-weight: 600; padding: 6px 0;
+}
+.site-nav a:hover, .site-nav a.active { color: var(--blue); }
+.mobile-nav a { text-align: left; padding: 11px 6px; font-weight: 600; color: var(--text); }
+.mobile-nav a:hover { color: var(--blue); }
+
+.public-page { min-height: 100vh; background: var(--bg); }
+.public-main { min-height: 60vh; }
+
+/* ------------------------------- Reseñas -------------------------------- */
+
+.reviews-hero {
+  position: relative; overflow: hidden; padding: 64px 0 30px;
+  background:
+    radial-gradient(720px 380px at 82% 6%, rgba(249, 115, 22, 0.10), transparent 65%),
+    radial-gradient(640px 420px at 4% 96%, rgba(18, 104, 181, 0.10), transparent 70%);
+}
+.reviews-hero h1 {
+  font-size: clamp(36px, 4.8vw, 58px); line-height: 1.04; letter-spacing: -0.04em;
+  color: var(--navy); font-weight: 780; margin: 18px 0 16px; max-width: 760px;
+}
+.reviews-hero h1 em { font-style: normal; color: var(--blue); }
+.reviews-lead { max-width: 620px; color: var(--muted); font-size: 16.5px; margin-bottom: 26px; }
+
+.reviews-score-card {
+  display: flex; align-items: center; gap: 20px; max-width: 580px;
+  background: #fff; border: 1px solid var(--line); border-radius: 18px;
+  padding: 20px 24px; box-shadow: var(--shadow-sm);
+}
+.reviews-score-card > strong {
+  font-size: 46px; line-height: 1; font-weight: 800; letter-spacing: -0.05em; color: var(--navy);
+}
+.reviews-score-card .reviews-score-label { font-weight: 750; color: var(--navy); font-size: 14px; }
+.reviews-score-card p { font-size: 12.5px; color: var(--muted); margin-top: 4px; }
+.reviews-score-line { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; font-size: 12.5px; color: var(--muted); }
+.reviews-score-card.is-empty > strong { color: var(--muted-2); }
+
+.reviews-layout { display: grid; grid-template-columns: 1.12fr 0.88fr; gap: 26px; align-items: start; }
+.reviews-list { display: grid; gap: 14px; }
+.review-card {
+  background: #fff; border: 1px solid var(--line); border-radius: 16px;
+  padding: 20px 22px; box-shadow: var(--shadow-sm);
+}
+.review-card-top { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.review-avatar {
+  width: 42px; height: 42px; border-radius: 50%; flex: none;
+  display: grid; place-items: center; font-size: 12.5px; font-weight: 800;
+  background: var(--blue-soft); color: var(--blue-dark); letter-spacing: 0.02em;
+}
+.review-author { min-width: 0; flex: 1; display: grid; gap: 2px; }
+.review-author strong { font-size: 14px; color: var(--navy); font-weight: 750; }
+.review-author span { font-size: 11.5px; color: var(--muted); }
+.review-text { font-size: 13.5px; color: var(--text); line-height: 1.65; }
+
+.rs-stars { display: inline-flex; align-items: center; gap: 2px; flex: none; }
+.rs-star { display: inline-flex; color: #d5dee8; }
+.rs-star svg { width: var(--star-size, 15px); height: var(--star-size, 15px); }
+.rs-star.is-on { color: var(--orange); }
+.rs-star.is-on svg { fill: currentColor; }
+
+.skeleton-card { display: grid; gap: 10px; }
+.skeleton-line {
+  display: block; height: 12px; border-radius: 6px;
+  background: linear-gradient(90deg, #eef3f8 25%, #e2eaf2 37%, #eef3f8 63%);
+  background-size: 400% 100%; animation: rsShine 1.4s ease infinite;
+}
+.skeleton-line.w40 { width: 40%; }
+.skeleton-line.w80 { width: 80%; }
+@keyframes rsShine { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
+
+/* Formulario de reseña */
+.review-form-card { padding: 24px; position: sticky; top: 92px; }
+.review-form-card .card-head h2 { font-size: 20px; color: var(--navy); font-weight: 760; letter-spacing: -0.02em; }
+.review-form-card .card-head p { font-size: 12.5px; color: var(--muted); margin-top: 3px; }
+.review-form-body form { display: grid; }
+.input-icon { position: relative; }
+.input-icon > svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: var(--muted-2); }
+.input-icon .input { padding-left: 38px; }
+.field-hint { font-size: 11.5px; color: var(--muted-2); }
+.auth-tip { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--muted); margin-top: 12px; }
+.auth-tip svg { width: 15px; height: 15px; flex: none; }
+.check-top { margin: 2px 0 16px; }
+.hp-field { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+
+.rating-input { display: flex; gap: 4px; }
+.rating-star {
+  border: 0; background: none; padding: 2px; color: #d5dee8;
+  transition: color 0.12s ease, transform 0.12s ease;
+}
+.rating-star svg { width: 30px; height: 30px; }
+.rating-star:hover { transform: translateY(-1px); }
+.rating-star.is-on { color: var(--orange); }
+.rating-star.is-on svg { fill: currentColor; }
+
+.review-empty, .review-success {
+  text-align: center; background: #fff; border: 1px dashed var(--line-2);
+  border-radius: 16px; padding: 40px 24px;
+}
+.review-empty > svg, .review-success > svg {
+  width: 42px; height: 42px; margin: 0 auto 12px; color: var(--blue);
+}
+.review-success > svg { color: var(--success); }
+.review-empty h3, .review-success h2 { font-size: 18px; color: var(--navy); font-weight: 750; margin-bottom: 6px; }
+.review-empty p, .review-success p { font-size: 13px; color: var(--muted); max-width: 400px; margin: 0 auto 16px; }
+
+.reviews-home { border-top: 1px solid var(--line); background: #fff; }
+.reviews-home-grid { display: grid; grid-template-columns: 0.84fr 1.16fr; gap: 34px; align-items: center; }
+.reviews-home h2 {
+  font-size: clamp(26px, 3vw, 36px); line-height: 1.1; letter-spacing: -0.03em;
+  color: var(--navy); font-weight: 760; margin: 12px 0 10px;
+}
+.reviews-teaser {
+  background: var(--bg); border: 1px solid var(--line); border-radius: 16px;
+  padding: 22px 24px; display: grid; gap: 10px;
+}
+.reviews-teaser[hidden] { display: none; }
+.reviews-teaser-top { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; font-size: 12px; color: var(--muted); }
+.reviews-teaser-top strong { color: var(--navy); font-size: 14px; }
+.reviews-teaser p { font-size: 14px; color: var(--text); line-height: 1.6; }
+.reviews-teaser-bottom { display: flex; justify-content: space-between; gap: 12px; font-size: 12px; color: var(--muted); flex-wrap: wrap; }
+.reviews-teaser-bottom a { display: inline-flex; align-items: center; gap: 5px; font-weight: 700; }
+.reviews-teaser-bottom a svg { width: 14px; height: 14px; }
+
+/* -------------------------------- Sauna --------------------------------- */
+
+.sauna-promo {
+  display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 28px;
+  background: linear-gradient(150deg, #0d3559 0%, #0a2540 62%, #071d33 100%);
+  border-radius: var(--radius-lg); padding: 36px 40px; color: #fff;
+  box-shadow: var(--shadow);
+}
+.sauna-promo h2 { font-size: clamp(24px, 2.6vw, 32px); letter-spacing: -0.03em; font-weight: 760; margin: 10px 0 8px; }
+.sauna-promo p { font-size: 13.5px; color: #b9d0e3; max-width: 620px; }
+.sauna-promo .eyebrow { color: #ffc79c; }
+.sauna-promo .eyebrow::before { background: var(--orange); }
+.sauna-promo .eyebrow svg { width: 14px; height: 14px; }
+.sauna-promo .btn { white-space: nowrap; }
+
+.sauna-hero {
+  position: relative; overflow: hidden; padding: 66px 0 48px;
+  background:
+    radial-gradient(700px 420px at 84% 18%, rgba(249, 115, 22, 0.13), transparent 66%),
+    radial-gradient(600px 400px at 4% 92%, rgba(18, 104, 181, 0.10), transparent 70%);
+}
+.sauna-hero-grid { display: grid; grid-template-columns: 1.08fr 0.92fr; gap: 48px; align-items: center; }
+.sauna-hero h1 {
+  font-size: clamp(38px, 4.8vw, 60px); line-height: 1.02; letter-spacing: -0.045em;
+  color: var(--navy); font-weight: 780; margin: 18px 0 18px;
+}
+.sauna-hero h1 em { font-style: normal; color: var(--orange-dark); }
+.sauna-lead { max-width: 560px; font-size: 16.5px; color: #526981; line-height: 1.65; }
+.sauna-note { display: flex; align-items: center; gap: 7px; margin-top: 18px; font-size: 12px; color: var(--muted); }
+.sauna-note svg { width: 15px; height: 15px; flex: none; }
+
+.sauna-art { position: relative; min-height: 360px; display: grid; place-items: center; }
+.sauna-orb { position: absolute; border-radius: 50%; filter: blur(2px); opacity: 0.55; }
+.sauna-orb.one { width: 260px; height: 260px; background: radial-gradient(circle at 35% 30%, rgba(249,115,22,0.5), rgba(249,115,22,0.05) 70%); top: -10px; right: 10px; }
+.sauna-orb.two { width: 210px; height: 210px; background: radial-gradient(circle at 40% 40%, rgba(18,104,181,0.35), rgba(18,104,181,0.02) 72%); bottom: -18px; left: 0; }
+.sauna-art-card {
+  position: relative; z-index: 1; background: var(--navy); color: #fff;
+  border-radius: 18px; padding: 20px 24px; display: grid; gap: 3px;
+  box-shadow: var(--shadow-lg); min-width: 200px;
+}
+.sauna-art-card > span { color: #ffb27a; }
+.sauna-art-card svg { width: 24px; height: 24px; }
+.sauna-art-card strong { font-size: 19px; font-weight: 760; letter-spacing: -0.02em; }
+.sauna-art-card small { font-size: 11.5px; color: #a9c2d8; }
+.sauna-art-card.alt {
+  position: absolute; z-index: 2; right: 4px; bottom: 14px;
+  background: #fff; color: var(--navy); border: 1px solid var(--line);
+  box-shadow: var(--shadow); min-width: 190px;
+}
+.sauna-art-card.alt > span { color: var(--orange); }
+.sauna-art-card.alt small { color: var(--muted); }
+
+.benefit-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.benefit-card {
+  background: #fff; border: 1px solid var(--line); border-radius: 16px;
+  padding: 22px; box-shadow: var(--shadow-sm);
+}
+.benefit-icon {
+  width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center;
+  background: var(--orange-soft); color: var(--orange-dark); margin-bottom: 14px;
+}
+.benefit-icon svg { width: 21px; height: 21px; }
+.benefit-card h3 { font-size: 15px; color: var(--navy); font-weight: 750; margin-bottom: 7px; }
+.benefit-card p { font-size: 12.5px; color: var(--muted); line-height: 1.6; }
+
+.protocol-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.protocol-step {
+  background: var(--bg); border: 1px solid var(--line); border-radius: 16px; padding: 24px;
+}
+.protocol-step > span {
+  display: inline-block; font-size: 12px; font-weight: 800; letter-spacing: 0.12em;
+  color: var(--orange-dark); margin-bottom: 10px;
+}
+.protocol-step h3 { font-size: 16px; color: var(--navy); font-weight: 750; margin-bottom: 6px; }
+.protocol-step p { font-size: 12.5px; color: var(--muted); line-height: 1.6; }
+
+.sauna-notice {
+  display: flex; gap: 18px; align-items: flex-start; background: #fff;
+  border: 1px solid var(--line); border-left: 4px solid var(--orange);
+  border-radius: 16px; padding: 24px 26px; margin-bottom: 22px;
+}
+.sauna-notice-icon {
+  width: 46px; height: 46px; flex: none; border-radius: 13px;
+  background: var(--orange-soft); color: var(--orange-dark); display: grid; place-items: center;
+}
+.sauna-notice-icon svg { width: 23px; height: 23px; }
+.sauna-notice h2 { font-size: 18px; color: var(--navy); font-weight: 750; margin-bottom: 6px; }
+.sauna-notice p { font-size: 13px; color: var(--muted); line-height: 1.65; }
+
+.sauna-final {
+  display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 28px;
+  background: linear-gradient(150deg, #0d3559 0%, #0a2540 62%, #071d33 100%);
+  border-radius: var(--radius-lg); padding: 34px 38px; color: #fff;
+}
+.sauna-final h2 { font-size: clamp(23px, 2.5vw, 31px); letter-spacing: -0.03em; font-weight: 760; margin: 10px 0 7px; }
+.sauna-final p { font-size: 13.5px; color: #b9d0e3; }
+.sauna-final .eyebrow { color: #ffc79c; }
+.sauna-final .eyebrow::before { background: var(--orange); }
+.sauna-final .btn { white-space: nowrap; }
+
+/* --------------------------- Admin de reseñas --------------------------- */
+
+.review-admin-list { display: grid; gap: 12px; }
+.review-admin-row {
+  display: grid; grid-template-columns: 44px 1fr auto; gap: 16px; align-items: start;
+  background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px;
+}
+.review-admin-main { min-width: 0; }
+.review-admin-top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; }
+.review-admin-top strong { font-size: 13.5px; color: var(--navy); font-weight: 750; }
+.review-admin-main p { font-size: 12.5px; color: var(--text); line-height: 1.6; }
+.review-admin-meta { display: block; font-size: 11px; color: var(--muted); margin-top: 6px; }
+.review-admin-actions { display: flex; flex-direction: column; gap: 6px; align-items: stretch; }
+.review-admin-actions .btn { justify-content: flex-start; white-space: nowrap; }
+
+@media (max-width: 1080px) {
+  .reviews-layout { grid-template-columns: 1fr; }
+  .review-form-card { position: static; }
+  .benefit-grid, .protocol-grid { grid-template-columns: 1fr 1fr; }
+  .sauna-hero-grid { gap: 28px; }
+}
+
+@media (max-width: 900px) {
+  .reviews-home-grid, .sauna-hero-grid { grid-template-columns: 1fr; }
+  .sauna-art { min-height: 300px; margin-top: 14px; }
+  .sauna-promo, .sauna-final { grid-template-columns: 1fr; padding: 30px; }
+  .sauna-promo .btn, .sauna-final .btn { justify-self: start; }
+  .review-admin-row { grid-template-columns: 40px 1fr; }
+  .review-admin-actions { grid-column: span 2; flex-direction: row; flex-wrap: wrap; }
+}
+
+@media (max-width: 680px) {
+  .reviews-hero, .sauna-hero { padding: 44px 0 26px; }
+  .reviews-score-card { padding: 17px 18px; gap: 14px; }
+  .reviews-score-card > strong { font-size: 36px; }
+  .benefit-grid, .protocol-grid { grid-template-columns: 1fr; }
+  .reviews-teaser { padding: 18px; }
+  .sauna-notice { padding: 20px; gap: 14px; }
+  .review-form-card { padding: 20px; }
+  .review-admin-row { padding: 15px; }
+}
+
+/* Ajustes de iconografía y estados vacíos */
+.eyebrow svg { width: 14px; height: 14px; }
+.form-error:empty { display: none; }
+.reviews-hero .eyebrow svg { color: var(--orange); }

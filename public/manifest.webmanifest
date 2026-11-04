@@ -1,0 +1,42 @@
+{
+  "name": "Recovery Studio · Kinesiología y movimiento",
+  "short_name": "Recovery Studio",
+  "description": "Agenda sesiones, revisa tus planes y sigue tu recuperación con Recovery Studio.",
+  "id": "/",
+  "start_url": "/#/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#f4f7fa",
+  "theme_color": "#0a2540",
+  "lang": "es-CL",
+  "categories": ["health", "fitness", "medical"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Agendar sesión",
+      "url": "/#/app/agendar"
+    },
+    {
+      "name": "Mis sesiones",
+      "url": "/#/app"
+    },
+    {
+      "name": "Reseñas",
+      "url": "/#/resenas"
+    }
+  ]
+}

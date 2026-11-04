@@ -15,9 +15,14 @@ function serviceIcon(name) {
   return { icon: 'activity', cls: '' };
 }
 
-function header() {
+export function siteHeader(active = 'inicio') {
   const me = state.me;
   const panel = me?.role === 'admin' ? '#/admin' : '#/app';
+  const onLanding = active === 'inicio';
+  const sectionLink = (id, label) => (onLanding
+    ? `<button type="button" data-scroll="${id}">${label}</button>`
+    : `<a href="#/">${label}</a>`);
+
   return `
     <header class="site-header">
       <div class="container">
@@ -26,10 +31,11 @@ function header() {
           <span class="brand-name"><b>Recovery Studio</b><span>Kinesiología & movimiento</span></span>
         </a>
         <nav class="site-nav" aria-label="Navegación principal">
-          <button type="button" data-scroll="servicios">Servicios</button>
-          <button type="button" data-scroll="planes">Planes</button>
-          <button type="button" data-scroll="proceso">Cómo funciona</button>
-          <button type="button" data-scroll="pagos">Pagos</button>
+          ${sectionLink('servicios', 'Servicios')}
+          ${sectionLink('planes', 'Planes')}
+          <a href="#/resenas" class="${active === 'resenas' ? 'active' : ''}">Reseñas</a>
+          <a href="#/sauna" class="${active === 'sauna' ? 'active' : ''}">Sauna húmedo</a>
+          ${sectionLink('pagos', 'Pagos')}
         </nav>
         <div class="header-actions">
           ${me
@@ -41,10 +47,11 @@ function header() {
         </div>
       </div>
       <div class="mobile-nav" id="mobile-nav">
-        <button type="button" data-scroll="servicios">Servicios</button>
-        <button type="button" data-scroll="planes">Planes</button>
-        <button type="button" data-scroll="proceso">Cómo funciona</button>
-        <button type="button" data-scroll="pagos">Pagos</button>
+        ${sectionLink('servicios', 'Servicios')}
+        ${sectionLink('planes', 'Planes')}
+        <a href="#/resenas">Reseñas</a>
+        <a href="#/sauna">Sauna húmedo</a>
+        ${sectionLink('pagos', 'Pagos')}
         ${me
           ? `<a class="btn primary sm" href="${panel}" style="margin-top:8px">Ir a mi panel</a>`
           : `<a class="btn primary sm" href="#/login" style="margin-top:8px">Ingresar</a>
@@ -53,17 +60,55 @@ function header() {
     </header>`;
 }
 
+export function siteFooter(landing = false) {
+  const cfg = state.config;
+  const me = state.me;
+  const explore = (id, label) => (landing
+    ? `<button type="button" data-scroll="${id}">${label}</button>`
+    : `<a href="#/">${label}</a>`);
+  return `
+    <footer class="site-footer">
+      <div class="container">
+        <div class="footer-grid">
+          <div>
+            <a class="brand" href="#/">
+              <span class="brand-mark">R</span>
+              <span class="brand-name"><b>Recovery Studio</b><span>Kinesiología & movimiento</span></span>
+            </a>
+            <p>Kinesiología, asesorías y planes de ejercicio para recuperar tu movimiento con acompañamiento cercano y profesional.</p>
+          </div>
+          <div class="footer-col">
+            <h4>Explorar</h4>
+            ${explore('servicios', 'Servicios')}
+            ${explore('planes', 'Planes')}
+            <a href="#/resenas">Reseñas</a>
+            <a href="#/sauna">Sauna húmedo</a>
+            ${explore('pagos', 'Pagos y política')}
+          </div>
+          <div class="footer-col">
+            <h4>Contacto</h4>
+            <a href="mailto:${esc(cfg?.email || 'recoverystudio7@gmail.com')}">${esc(cfg?.email || 'recoverystudio7@gmail.com')}</a>
+            ${me ? `<a href="${me.role === 'admin' ? '#/admin' : '#/app'}">Mi panel</a>` : '<a href="#/login">Ingresar</a><a href="#/registro">Crear cuenta</a>'}
+          </div>
+        </div>
+        <div class="footer-bottom">
+          <span>© ${new Date().getFullYear()} Recovery Studio. Todos los derechos reservados.</span>
+          <span>Agenda online · Transferencia bancaria · Confirmación manual</span>
+        </div>
+      </div>
+    </footer>`;
+}
+
 export function renderLanding() {
   const cfg = state.config;
   const services = cfg?.services || [];
   const plans = cfg?.plans || [];
   const bank = cfg?.bank || {};
   const hours = cfg?.cancellationHours ?? 12;
-  const me = state.me;
   document.title = 'Recovery Studio · Kinesiología y movimiento';
 
   $('#app').innerHTML = `
-    ${header()}
+    ${siteHeader('inicio')}
 
     <section class="hero">
       <div class="container hero-grid">
@@ -235,35 +280,33 @@ export function renderLanding() {
       </div>
     </section>
 
-    <footer class="site-footer">
+    <section class="section-tight reviews-home">
       <div class="container">
-        <div class="footer-grid">
+        <div class="reviews-home-grid">
           <div>
-            <a class="brand" href="#/">
-              <span class="brand-mark">R</span>
-              <span class="brand-name"><b>Recovery Studio</b><span>Kinesiología & movimiento</span></span>
-            </a>
-            <p>Kinesiología, asesorías y planes de ejercicio para recuperar tu movimiento con acompañamiento cercano y profesional.</p>
+            <div class="eyebrow">Comunidad</div>
+            <h2>Lo que dicen nuestros clientes</h2>
+            <p class="muted">Opiniones reales de personas que entrenan, se recuperan y vuelven más fuertes con nosotros.</p>
           </div>
-          <div class="footer-col">
-            <h4>Explorar</h4>
-            <button type="button" data-scroll="servicios">Servicios</button>
-            <button type="button" data-scroll="planes">Planes</button>
-            <button type="button" data-scroll="proceso">Cómo funciona</button>
-            <button type="button" data-scroll="pagos">Pagos y política</button>
-          </div>
-          <div class="footer-col">
-            <h4>Contacto</h4>
-            <a href="mailto:${esc(cfg?.email || 'recoverystudio7@gmail.com')}">${esc(cfg?.email || 'recoverystudio7@gmail.com')}</a>
-            ${me ? `<a href="${me.role === 'admin' ? '#/admin' : '#/app'}">Mi panel</a>` : '<a href="#/login">Ingresar</a><a href="#/registro">Crear cuenta</a>'}
-          </div>
-        </div>
-        <div class="footer-bottom">
-          <span>© ${new Date().getFullYear()} Recovery Studio. Todos los derechos reservados.</span>
-          <span>Agenda online · Transferencia bancaria · Confirmación manual</span>
+          <div class="reviews-teaser" data-reviews-teaser hidden></div>
         </div>
       </div>
-    </footer>`;
+    </section>
+
+    <section class="section-tight">
+      <div class="container">
+        <div class="sauna-promo">
+          <div>
+            <span class="eyebrow light">${icon('droplet')} Sauna húmedo</span>
+            <h2>Suma calor a tu recuperación</h2>
+            <p>Conoce cómo el sauna húmedo complementa la movilidad, el descanso y la recuperación post-entrenamiento.</p>
+          </div>
+          <a class="btn accent" href="#/sauna">Ver beneficios ${icon('arrowRight')}</a>
+        </div>
+      </div>
+    </section>
+
+    ${siteFooter(true)}`;
 
   // (los iconos se generan con el set compartido)
   bindLanding();
@@ -316,4 +359,7 @@ function bindLanding() {
   });
 
   bindCopyButtons();
+  import('./reviews.js')
+    .then((mod) => mod.hydrateTeaser())
+    .catch(() => { /* la portada sigue funcionando sin reseñas */ });
 }

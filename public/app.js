@@ -9,6 +9,7 @@ import { renderLanding } from './js/landing.js';
 import { renderAuth } from './js/auth.js';
 import { renderUser } from './js/user.js';
 import { renderAdmin } from './js/admin.js';
+import { renderReviewsPage, renderSaunaPage } from './js/reviews.js';
 
 let lastPath = null;
 
@@ -31,6 +32,9 @@ function render() {
     renderAuth(path === '/registro' ? 'registro' : 'login');
     return;
   }
+
+  if (path === '/resenas') { renderReviewsPage(); return; }
+  if (path === '/sauna') { renderSaunaPage(); return; }
 
   if (path.startsWith('/app')) {
     if (!state.me) {
@@ -90,6 +94,12 @@ async function boot() {
   if (!location.hash) history.replaceState(null, '', '#/');
   render();
   window.addEventListener('hashchange', render);
+
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js').catch(() => { /* sin soporte o bloqueado */ });
+    });
+  }
 }
 
 boot();

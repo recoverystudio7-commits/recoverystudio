@@ -12,6 +12,7 @@ import {
   pageAdminUsers, pageAdminPlans, pageAdminRoutines,
 } from './admin-catalog.js';
 import { pageAdminPayments, pageAdminConfig } from './admin-ops.js';
+import { pageAdminReviews } from './reviews.js';
 
 const TITLES = {
   '/admin': ['Dashboard', 'Ingresos, retención y agenda del studio'],
@@ -20,6 +21,7 @@ const TITLES = {
   '/admin/planes': ['Planes y servicios', 'Catálogo, valores y solicitudes'],
   '/admin/pagos': ['Pagos e ingresos', 'Transferencias y boletas'],
   '/admin/rutinas': ['Rutinas', 'Ejercicios asignados a clientes'],
+  '/admin/resenas': ['Reseñas', 'Moderación de opiniones de clientes'],
   '/admin/config': ['Configuración', 'Datos del studio y seguridad'],
 };
 
@@ -44,6 +46,7 @@ export function renderAdmin(path) {
   if (path === '/admin/planes') return run(() => pageAdminPlans(content));
   if (path === '/admin/pagos') return run(() => pageAdminPayments(content));
   if (path === '/admin/rutinas') return run(() => pageAdminRoutines(content));
+  if (path === '/admin/resenas') return run(() => pageAdminReviews(content));
   if (path === '/admin/config') return run(() => pageAdminConfig(content));
   return run(() => pageDashboard(content));
 }

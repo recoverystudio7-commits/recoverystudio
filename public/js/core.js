@@ -148,6 +148,17 @@ const ICONS = {
   info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
   trendingUp: '<path d="M3 17l6-6 4 4 7-7"/><path d="M14 8h6v6"/>',
   home: '<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1Z"/>',
+  star: '<path d="m12 2.8 2.9 5.9 6.5.9-4.7 4.6 1.1 6.4-5.8-3-5.8 3 1.1-6.4L2.6 9.6l6.5-.9Z"/>',
+  droplet: '<path d="M12 2.7s6.5 6.4 6.5 11a6.5 6.5 0 0 1-13 0c0-4.6 6.5-11 6.5-11Z"/>',
+  thermometer: '<path d="M14 14.8V4a2 2 0 1 0-4 0v10.8a4 4 0 1 0 4 0Z"/><path d="M12 8v8"/>',
+  waves: '<path d="M2 7c2 0 2 2 4 2s2-2 4-2 2 2 4 2 2-2 4-2 2 2 4 2"/><path d="M2 13c2 0 2 2 4 2s2-2 4-2 2 2 4 2 2-2 4-2 2 2 4 2"/><path d="M2 19c2 0 2 2 4 2s2-2 4-2 2 2 4 2 2-2 4-2 2 2 4 2"/>',
+  zap: '<path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z"/>',
+  moon: '<path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/>',
+  leaf: '<path d="M11 20A7 7 0 0 1 4 13c0-5 4-9 16-9 0 12-4 16-9 16Z"/><path d="M4 21c1.5-5 4.5-8 9-10"/>',
+  messageSquare: '<path d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z"/>',
+  send: '<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>',
+  whatsapp: '<path d="M20.5 11.6a8.4 8.4 0 0 1-12.4 7.4L3.5 20.5l1.6-4.5a8.4 8.4 0 1 1 15.4-4.4Z"/><path d="M8.5 8.4c.2-.5.4-.5.7-.5h.5c.2 0 .4 0 .5.4l.8 1.9c.1.2 0 .4-.1.6l-.6.7c-.1.2-.2.3 0 .6.6 1 1.5 1.9 2.6 2.4.3.2.4.1.6-.1l.7-.8c.2-.2.4-.2.6-.1l1.8.9c.3.1.4.2.4.4v.5c-.1.5-.4 1-.8 1.2-.5.3-1.2.4-1.9.2-1.2-.4-2.4-1-3.4-2a9 9 0 0 1-2.1-3.2c-.3-.8-.2-1.5.1-2Z"/>',
+  externalLink: '<path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>',
 };
 
 export function icon(name, cls = '') {
@@ -449,6 +460,7 @@ const ADMIN_NAV = [
   ['/admin/planes', 'Planes y servicios', 'layers'],
   ['/admin/pagos', 'Pagos e ingresos', 'wallet'],
   ['/admin/rutinas', 'Rutinas', 'activity'],
+  ['/admin/resenas', 'Reseñas', 'messageSquare'],
   ['/admin/config', 'Configuración', 'settings'],
 ];
 

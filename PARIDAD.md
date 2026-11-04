@@ -20,17 +20,17 @@ La versión Node (este repo) tiene backend real, sesiones, TOTP y persistencia e
 | Finanzas: gastos, utilidad, margen, 6 meses | ❌ | ✅ | **Portar** |
 | Honorarios: boletas y resumen mensual | ⚠️ parcial (CSV + retención) | ✅ | **Portar UI** |
 | Cotizaciones de empresas | ❌ | ✅ | **Portar** |
-| Reseñas públicas con moderación (Supabase) | ❌ | ✅ | **Portar** |
+| Reseñas públicas con moderación | ✅ (Redis) | ✅ (Supabase) | — |
 | Maximales (PRs) | ❌ | ✅ | **Portar** |
-| Página pública de sauna húmedo | ❌ | ✅ | **Portar** |
+| Página pública de sauna húmedo | ✅ | ✅ | — |
 | Auditoría de acciones del admin | ❌ | ✅ | **Portar** |
-| PWA (manifest + service worker) | ❌ | ✅ | **Portar** |
+| PWA (manifest + service worker) | ✅ | ✅ | — |
 
 ## Fases sugeridas
 
 1. **Base en la nube** (hecho): Vercel + Redis, staging probado, dominio preparado.
-2. **Contabilidad**: finanzas (gastos/utilidad/margen) y honorarios (boletas/resumen).
-3. **Marketing**: reseñas con Supabase y página de sauna.
-4. **Operación**: cotizaciones, maximales, auditoría y PWA.
+2. **Marketing** (hecho): reseñas con moderación, página de sauna y PWA.
+3. **Contabilidad**: finanzas (gastos/utilidad/margen) y honorarios (boletas/resumen).
+4. **Operación**: cotizaciones, maximales y auditoría.
 
 Cada fase se puede desplegar sin romper lo que ya funciona.

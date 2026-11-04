@@ -199,22 +199,28 @@ function seedDb() {
     orders: [],
     payments: [],
     routines: [],
+    reviews: [],
   };
+}
+
+function ensureCollections(next) {
+  next.settings = { ...defaultSettings(), ...(next.settings || {}) };
+  next.users ||= [];
+  next.services ||= [];
+  next.plans ||= [];
+  next.bookings ||= [];
+  next.orders ||= [];
+  next.payments ||= [];
+  next.routines ||= [];
+  next.reviews ||= [];
+  return next;
 }
 
 function loadDb() {
   if (fs.existsSync(DB_FILE)) {
     try {
       const db = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
-      db.settings = { ...defaultSettings(), ...(db.settings || {}) };
-      db.users ||= [];
-      db.services ||= [];
-      db.plans ||= [];
-      db.bookings ||= [];
-      db.orders ||= [];
-      db.payments ||= [];
-      db.routines ||= [];
-      return db;
+      return ensureCollections(db);
     } catch (err) {
       console.error('No se pudo leer la base de datos, se creará una nueva:', err.message);
     }
@@ -228,7 +234,7 @@ let db = null;
 let dirty = false;
 
 function setDb(next) {
-  db = next;
+  db = ensureCollections(next);
   dirty = false;
 }
 
@@ -507,6 +513,25 @@ function attachUser(booking) {
   return { ...booking, user: user ? { id: user.id, name: user.name, email: user.email, phone: user.phone || '' } : null };
 }
 
+function publicReview(review) {
+  return {
+    id: review.id,
+    authorName: review.authorName,
+    rating: review.rating,
+    comment: review.comment,
+    service: review.service || '',
+    createdAt: review.approvedAt || review.createdAt,
+  };
+}
+
+function reviewsSummary(list) {
+  const approved = list.filter((r) => r.status === 'approved');
+  const average = approved.length
+    ? approved.reduce((sum, r) => sum + Number(r.rating || 0), 0) / approved.length
+    : 0;
+  return { count: approved.length, average: Math.round(average * 10) / 10 };
+}
+
 function publicConfig() {
   return {
     studioName: db.settings.studioName,
@@ -521,6 +546,7 @@ function publicConfig() {
     plans: db.plans.filter((p) => p.active !== false).map((p) => ({
       id: p.id, name: p.name, sessions: p.sessions, price: p.price, description: p.description,
     })),
+    reviews: reviewsSummary(db.reviews),
   };
 }
 
@@ -553,6 +579,57 @@ function matchRoute(method, pathname) {
 /* ------------------------- Público / auth ------------------------- */
 
 route('GET', '/api/public/config', 'public', () => publicConfig());
+
+/* ----------------------------- Reseñas ----------------------------- */
+
+route('GET', '/api/public/reviews', 'public', () => {
+  const reviews = db.reviews
+    .filter((r) => r.status === 'approved')
+    .sort((a, b) => String(b.approvedAt || b.createdAt).localeCompare(String(a.approvedAt || a.createdAt)))
+    .slice(0, 60)
+    .map(publicReview);
+  return { reviews, ...reviewsSummary(db.reviews) };
+});
+
+route('POST', '/api/public/reviews', 'public', ({ body, req, user, res }) => {
+  const ip = req.socket.remoteAddress || 'ip';
+  if (!rateLimit(`review:${ip}`, 4, 6 * 60 * 60 * 1000)) {
+    return fail(res, 429, 'Ya recibimos una reseña desde este dispositivo. Intenta nuevamente más tarde.');
+  }
+  // Honeypot: los bots completan este campo oculto.
+  if (clean(body.website, 80)) return sendJson(res, 201, { ok: true, pending: true });
+
+  const name = clean(body.name, 80);
+  const comment = clean(body.comment, 1200);
+  const service = clean(body.service, 90);
+  const rating = Math.min(5, Math.max(1, round(body.rating || 5)));
+  const consent = body.consent === true || body.consent === 'true';
+
+  if (name.length < 2) return fail(res, 400, 'Escribe tu nombre (mínimo 2 caracteres).');
+  if (!consent) return fail(res, 400, 'Debes autorizar la publicación de tu reseña.');
+  if (comment.length < 10) return fail(res, 400, 'Cuéntanos un poco más: mínimo 10 caracteres.');
+  if (comment.length > 1200) return fail(res, 400, 'El comentario no puede superar los 1200 caracteres.');
+
+  const duplicate = db.reviews.find((r) => lower(r.authorName) === lower(name) && r.comment === comment);
+  if (duplicate) return fail(res, 409, 'Esa reseña ya fue recibida. Gracias por compartir tu experiencia.');
+
+  const review = {
+    id: uid(),
+    userId: user?.id || null,
+    authorName: name,
+    rating,
+    comment,
+    service,
+    status: 'pending',
+    createdAt: nowISO(),
+    approvedAt: null,
+    moderatedAt: null,
+    moderatedBy: null,
+  };
+  db.reviews.push(review);
+  scheduleSave();
+  sendJson(res, 201, { ok: true, pending: true, review: publicReview(review) });
+});
 
 route('POST', '/api/auth/register', 'public', ({ body, res, req }) => {
   const ip = req.socket.remoteAddress || 'ip';
@@ -1391,6 +1468,64 @@ route('DELETE', '/api/admin/routines/:id', 'admin', ({ params, res }) => {
   sendJson(res, 200, { ok: true });
 });
 
+route('GET', '/api/admin/reviews', 'admin', ({ query }) => {
+  const status = query.get('status') || '';
+  let list = db.reviews.slice();
+  if (status && status !== 'all') list = list.filter((r) => r.status === status);
+  list.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+  const counts = {
+    pending: db.reviews.filter((r) => r.status === 'pending').length,
+    approved: db.reviews.filter((r) => r.status === 'approved').length,
+    rejected: db.reviews.filter((r) => r.status === 'rejected').length,
+    total: db.reviews.length,
+  };
+  return {
+    reviews: list.map((r) => ({
+      ...r,
+      user: db.users.find((u) => u.id === r.userId)
+        ? publicUser(db.users.find((u) => u.id === r.userId))
+        : null,
+    })),
+    counts,
+    ...reviewsSummary(db.reviews),
+  };
+});
+
+route('PATCH', '/api/admin/reviews/:id', 'admin', ({ params, body, res }) => {
+  const review = db.reviews.find((r) => r.id === params.id);
+  if (!review) return fail(res, 404, 'Reseña no encontrada.');
+  if (body.status !== undefined) {
+    if (!['pending', 'approved', 'rejected'].includes(body.status)) return fail(res, 400, 'Estado inválido.');
+    review.status = body.status;
+    review.moderatedAt = nowISO();
+    review.moderatedBy = 'admin';
+    if (body.status === 'approved') review.approvedAt = nowISO();
+    else if (body.status !== 'approved' && !review.approvedAt) review.approvedAt = null;
+  }
+  if (body.authorName !== undefined) {
+    const name = clean(body.authorName, 80);
+    if (name.length < 2) return fail(res, 400, 'El nombre es demasiado corto.');
+    review.authorName = name;
+  }
+  if (body.comment !== undefined) {
+    const comment = clean(body.comment, 1200);
+    if (comment.length < 10) return fail(res, 400, 'El comentario es demasiado corto.');
+    review.comment = comment;
+  }
+  if (body.rating !== undefined) review.rating = Math.min(5, Math.max(1, round(body.rating)));
+  if (body.service !== undefined) review.service = clean(body.service, 90);
+  scheduleSave();
+  sendJson(res, 200, { review });
+});
+
+route('DELETE', '/api/admin/reviews/:id', 'admin', ({ params, res }) => {
+  const idx = db.reviews.findIndex((r) => r.id === params.id);
+  if (idx < 0) return fail(res, 404, 'Reseña no encontrada.');
+  db.reviews.splice(idx, 1);
+  scheduleSave();
+  sendJson(res, 200, { ok: true });
+});
+
 route('GET', '/api/admin/settings', 'admin', ({ user }) => {
   const { sessionSecret, ...safe } = db.settings;
   return { settings: safe, totpEnabled: !!user.totpEnabled };
@@ -1480,6 +1615,7 @@ const MIME = {
   '.css': 'text/css; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
   '.json': 'application/json; charset=utf-8',
+  '.webmanifest': 'application/manifest+json; charset=utf-8',
   '.svg': 'image/svg+xml',
   '.png': 'image/png',
   '.jpg': 'image/jpeg',
@@ -1512,7 +1648,8 @@ function serveStatic(req, res, pathname) {
     const cache = ['.html', '.js', '.css'].includes(ext) ? 'no-cache' : 'public, max-age=3600';
     fs.readFile(filePath, (e, data) => {
       if (e) { res.writeHead(500, SECURITY_HEADERS); res.end('Error'); return; }
-      res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream', 'Cache-Control': cache, ...SECURITY_HEADERS });
+      const noCache = ['/sw.js', '/manifest.webmanifest'].includes(pathname);
+      res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream', 'Cache-Control': noCache ? 'no-cache' : cache, ...SECURITY_HEADERS });
       res.end(data);
     });
   });
