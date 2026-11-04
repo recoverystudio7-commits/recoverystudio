@@ -17,8 +17,8 @@ La versión Node (este repo) tiene backend real, sesiones, TOTP y persistencia e
 | Dashboard, agenda y usuarios (admin) | ✅ | ✅ | — |
 | TOTP obligatorio del admin | ✅ | ❌ (PIN) | — |
 | Exportación CSV de pagos y boletas | ✅ | ✅ | — |
-| Finanzas: gastos, utilidad, margen, 6 meses | ❌ | ✅ | **Portar** |
-| Honorarios: boletas y resumen mensual | ⚠️ parcial (CSV + retención) | ✅ | **Portar UI** |
+| Finanzas: gastos, utilidad, margen, 6 meses | ✅ | ✅ | — |
+| Honorarios: boletas y resumen mensual | ✅ | ✅ | — |
 | Cotizaciones de empresas | ❌ | ✅ | **Portar** |
 | Reseñas públicas con moderación | ✅ (Redis) | ✅ (Supabase) | — |
 | Maximales (PRs) | ❌ | ✅ | **Portar** |
@@ -30,7 +30,7 @@ La versión Node (este repo) tiene backend real, sesiones, TOTP y persistencia e
 
 1. **Base en la nube** (hecho): Vercel + Redis, staging probado, dominio preparado.
 2. **Marketing** (hecho): reseñas con moderación, página de sauna y PWA.
-3. **Contabilidad**: finanzas (gastos/utilidad/margen) y honorarios (boletas/resumen).
+3. **Contabilidad** (hecho): finanzas (gastos/utilidad/margen) y honorarios (boletas/resumen).
 4. **Operación**: cotizaciones, maximales y auditoría.
 
 Cada fase se puede desplegar sin romper lo que ya funciona.

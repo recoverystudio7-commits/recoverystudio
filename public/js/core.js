@@ -12,6 +12,7 @@ export const state = {
   adminAgendaDate: '',
   adminPayStatus: 'all',
   adminRoutineUser: '',
+  adminFinanceMonth: '',
 };
 
 export const $ = (sel, root = document) => root.querySelector(sel);
@@ -145,6 +146,7 @@ const ICONS = {
   sparkles: '<path d="m12 3 1.8 4.9L19 9.7l-5.2 1.8L12 16.4l-1.8-4.9L5 9.7l5.2-1.8L12 3Z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8L19 15Z"/>',
   checkCircle: '<circle cx="12" cy="12" r="9"/><path d="m8.5 12 2.5 2.5 4.5-4.5"/>',
   file: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M8 13h8M8 17h5"/>',
+  percent: '<path d="M19 5 5 19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/>',
   info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
   trendingUp: '<path d="M3 17l6-6 4 4 7-7"/><path d="M14 8h6v6"/>',
   home: '<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1Z"/>',
@@ -459,6 +461,8 @@ const ADMIN_NAV = [
   ['/admin/usuarios', 'Usuarios', 'users'],
   ['/admin/planes', 'Planes y servicios', 'layers'],
   ['/admin/pagos', 'Pagos e ingresos', 'wallet'],
+  ['/admin/finanzas', 'Finanzas', 'trendingUp'],
+  ['/admin/honorarios', 'Honorarios', 'file'],
   ['/admin/rutinas', 'Rutinas', 'activity'],
   ['/admin/resenas', 'Reseñas', 'messageSquare'],
   ['/admin/config', 'Configuración', 'settings'],

@@ -200,6 +200,8 @@ function seedDb() {
     payments: [],
     routines: [],
     reviews: [],
+    expenses: [],
+    boletas: [],
   };
 }
 
@@ -213,6 +215,8 @@ function ensureCollections(next) {
   next.payments ||= [];
   next.routines ||= [];
   next.reviews ||= [];
+  next.expenses ||= [];
+  next.boletas ||= [];
   return next;
 }
 
@@ -511,6 +515,147 @@ function paymentConcept(payment) {
 function attachUser(booking) {
   const user = db.users.find((u) => u.id === booking.userId);
   return { ...booking, user: user ? { id: user.id, name: user.name, email: user.email, phone: user.phone || '' } : null };
+}
+
+/* ------------------------- Finanzas y honorarios ------------------- */
+
+const INCOME_CATEGORIES = ['Planes', 'Sesiones', 'Asesorías', 'Empresas', 'Otros'];
+const EXPENSE_CATEGORIES = ['Arriendo', 'Insumos', 'Marketing', 'Servicios básicos', 'Mantención', 'Sueldos', 'Otros'];
+const PAYMENT_METHODS = ['Transferencia', 'Efectivo', 'Débito', 'Crédito'];
+
+function currentMonthKey() {
+  return localDateStr().slice(0, 7);
+}
+
+/** Normaliza fechas ISO o YYYY-MM-DD a la clave YYYY-MM. */
+function monthOf(value) {
+  const match = /^(\d{4})-(\d{2})/.exec(String(value || ''));
+  if (match) return `${match[1]}-${match[2]}`;
+  return monthKey(value);
+}
+
+function validMonth(value) {
+  const raw = clean(value, 7);
+  return /^\d{4}-(0[1-9]|1[0-2])$/.test(raw) ? raw : currentMonthKey();
+}
+
+function paymentCategory(payment) {
+  if (payment.category) return payment.category;
+  if (payment.kind === 'booking') {
+    const booking = db.bookings.find((b) => b.id === payment.refId);
+    const name = String(booking?.serviceName || '').toLowerCase();
+    return /asesor|virtual|rutina|online/.test(name) ? 'Asesorías' : 'Sesiones';
+  }
+  if (payment.kind === 'plan' || payment.kind === 'custom') return 'Planes';
+  return 'Otros';
+}
+
+function paymentUser(payment) {
+  const user = publicUser(db.users.find((u) => u.id === payment.userId));
+  if (user) return user;
+  if (payment.payerName) {
+    return { id: null, name: payment.payerName, email: '', phone: '', role: 'guest', active: true };
+  }
+  return null;
+}
+
+function confirmedPaymentsInMonth(key) {
+  return db.payments.filter((p) => p.status === 'confirmed' && monthOf(p.confirmedAt) === key);
+}
+
+function financeSummary(key) {
+  const rate = Number(db.settings.retentionRate) || 0.1525;
+  const payments = confirmedPaymentsInMonth(key)
+    .slice()
+    .sort((a, b) => String(b.confirmedAt).localeCompare(String(a.confirmedAt)));
+  const expenses = db.expenses
+    .filter((e) => monthOf(e.date) === key)
+    .slice()
+    .sort((a, b) => String(b.date).localeCompare(String(a.date)));
+  const boletas = db.boletas
+    .filter((b) => monthOf(b.date) === key)
+    .slice()
+    .sort((a, b) => String(b.date).localeCompare(String(a.date)));
+
+  const income = payments.reduce((sum, p) => sum + round(p.amount), 0);
+  const spent = expenses.reduce((sum, e) => sum + round(e.amount), 0);
+  const gross = boletas.reduce((sum, b) => sum + round(b.gross), 0);
+  const retention = boletas.reduce((sum, b) => {
+    const boletaRate = b.retentionRate === undefined || b.retentionRate === null ? rate : Number(b.retentionRate);
+    return sum + Math.round(round(b.gross) * boletaRate);
+  }, 0);
+
+  const byCategory = new Map();
+  for (const payment of payments) {
+    const category = paymentCategory(payment);
+    const row = byCategory.get(category) || { category, amount: 0, count: 0 };
+    row.amount += round(payment.amount);
+    row.count += 1;
+    byCategory.set(category, row);
+  }
+
+  const byExpense = new Map();
+  for (const expense of expenses) {
+    const category = expense.category || 'Otros';
+    const row = byExpense.get(category) || { category, amount: 0, count: 0 };
+    row.amount += round(expense.amount);
+    row.count += 1;
+    byExpense.set(category, row);
+  }
+
+  return {
+    key,
+    income,
+    expenses: spent,
+    profit: income - spent,
+    margin: income ? (income - spent) / income : 0,
+    gross,
+    retention,
+    net: gross - retention,
+    retentionRate: rate,
+    payments: payments.map((payment) => ({
+      id: payment.id,
+      kind: payment.kind,
+      ref: payment.reference || '',
+      concept: paymentConcept(payment),
+      category: paymentCategory(payment),
+      method: payment.method || 'Transferencia',
+      amount: round(payment.amount),
+      date: payment.confirmedAt || payment.createdAt,
+      userName: paymentUser(payment)?.name || 'Sin cliente',
+    })),
+    expenseList: expenses.map((expense) => ({ ...expense, amount: round(expense.amount) })),
+    boletas: boletas.map((boleta) => ({
+      ...boleta,
+      gross: round(boleta.gross),
+      retentionRate: boleta.retentionRate === undefined || boleta.retentionRate === null
+        ? rate
+        : Number(boleta.retentionRate),
+    })),
+    incomeByCategory: [...byCategory.values()].sort((a, b) => b.amount - a.amount),
+    expensesByCategory: [...byExpense.values()].sort((a, b) => b.amount - a.amount),
+  };
+}
+
+function financeMonths(count = 6, endKey = currentMonthKey()) {
+  const [year, month] = endKey.split('-').map(Number);
+  const list = [];
+  for (let i = count - 1; i >= 0; i -= 1) {
+    const date = new Date(year, month - 1 - i, 1);
+    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+    const summary = financeSummary(key);
+    list.push({
+      key,
+      income: summary.income,
+      expenses: summary.expenses,
+      profit: summary.profit,
+      margin: summary.margin,
+      gross: summary.gross,
+      retention: summary.retention,
+      net: summary.net,
+    });
+  }
+  return list;
 }
 
 function publicReview(review) {
@@ -997,25 +1142,31 @@ route('GET', '/api/admin/stats', 'admin', () => {
   const monthBookings = db.bookings.filter((b) => monthKey(b.date ? parseLocal(b.date).toISOString() : '') === thisMonth);
   const attended = monthBookings.filter((b) => b.status === 'attended').length;
   const noShow = monthBookings.filter((b) => b.status === 'no_show').length;
+  const monthExpenses = db.expenses
+    .filter((e) => monthOf(e.date) === thisMonth)
+    .reduce((sum, e) => sum + round(e.amount), 0);
   const monthly = [];
   for (let i = 5; i >= 0; i -= 1) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
     const amount = confirmed.filter((p) => monthKey(p.confirmedAt) === key).reduce((s, p) => s + round(p.amount), 0);
-    monthly.push({ key, label: new Intl.DateTimeFormat('es-CL', { month: 'short' }).format(d).replace('.', ''), amount });
+    const spent = db.expenses.filter((e) => monthOf(e.date) === key).reduce((s, e) => s + round(e.amount), 0);
+    monthly.push({ key, label: new Intl.DateTimeFormat('es-CL', { month: 'short' }).format(d).replace('.', ''), amount, expenses: spent, profit: amount - spent });
   }
   const activeOrders = db.orders.filter((o) => o.status === 'active');
   const pendingOrders = db.orders.filter((o) => ['pending_review', 'pending_payment', 'review'].includes(o.status));
   const recentPayments = confirmed.slice().sort((a, b) => String(b.confirmedAt).localeCompare(String(a.confirmedAt))).slice(0, 5)
-    .map((p) => ({ ...p, concept: paymentConcept(p), user: publicUser(db.users.find((u) => u.id === p.userId)) }));
+    .map((p) => ({ ...p, concept: paymentConcept(p), user: paymentUser(p) }));
   const pendingPaymentsView = pendingPayments.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt))).slice(0, 6)
-    .map((p) => ({ ...p, concept: paymentConcept(p), user: publicUser(db.users.find((u) => u.id === p.userId)) }));
+    .map((p) => ({ ...p, concept: paymentConcept(p), user: paymentUser(p) }));
 
   return {
     income: {
       total,
       month: monthTotal,
       prevMonth: prevTotal,
+      expenses: monthExpenses,
+      profit: monthTotal - monthExpenses,
       retention,
       net: total - retention,
       retentionRate: rate,
@@ -1141,7 +1292,7 @@ route('GET', '/api/admin/payments', 'admin', ({ query }) => {
   const payments = list.map((p) => ({
     ...p,
     concept: paymentConcept(p),
-    user: publicUser(db.users.find((u) => u.id === p.userId)),
+    user: paymentUser(p),
     order: p.kind !== 'booking' ? db.orders.find((o) => o.id === p.refId) || null : null,
     booking: p.kind === 'booking' ? db.bookings.find((b) => b.id === p.refId) || null : null,
   }));
@@ -1152,6 +1303,107 @@ route('GET', '/api/admin/payments', 'admin', ({ query }) => {
     payments,
     totals: { confirmed: total, retention: Math.round(total * rate), net: total - Math.round(total * rate), rate },
   };
+});
+
+route('GET', '/api/admin/finance', 'admin', ({ query }) => {
+  const key = validMonth(query.get('month'));
+  const numbers = db.boletas
+    .map((b) => Number(String(b.number || '').replace(/\D/g, '')))
+    .filter((n) => Number.isFinite(n) && n > 0);
+  return {
+    month: key,
+    nextBoletaNumber: String((numbers.length ? Math.max(...numbers) : 300) + 1),
+    categories: {
+      income: INCOME_CATEGORIES,
+      expenses: EXPENSE_CATEGORIES,
+      methods: PAYMENT_METHODS,
+    },
+    summary: financeSummary(key),
+    months: financeMonths(6, key),
+  };
+});
+
+route('POST', '/api/admin/expenses', 'admin', ({ body, res }) => {
+  const amount = round(body.amount);
+  if (!Number.isFinite(Number(body.amount)) || amount <= 0) return fail(res, 400, 'Ingresa un monto válido para el gasto.');
+  const description = clean(body.description, 160);
+  if (description.length < 2) return fail(res, 400, 'Describe el gasto.');
+  const expense = {
+    id: uid(),
+    date: isDateStr(body.date) ? body.date : localDateStr(),
+    category: EXPENSE_CATEGORIES.includes(clean(body.category, 40)) ? clean(body.category, 40) : 'Otros',
+    description,
+    amount,
+    method: PAYMENT_METHODS.includes(clean(body.method, 40)) ? clean(body.method, 40) : 'Transferencia',
+    createdAt: nowISO(),
+  };
+  db.expenses.push(expense);
+  scheduleSave();
+  sendJson(res, 201, { expense });
+});
+
+route('DELETE', '/api/admin/expenses/:id', 'admin', ({ params, res }) => {
+  const index = db.expenses.findIndex((e) => e.id === params.id);
+  if (index < 0) return fail(res, 404, 'Gasto no encontrado.');
+  db.expenses.splice(index, 1);
+  scheduleSave();
+  sendJson(res, 200, { ok: true });
+});
+
+route('POST', '/api/admin/boletas', 'admin', ({ body, res }) => {
+  const gross = round(body.gross);
+  if (!Number.isFinite(Number(body.gross)) || gross <= 0) return fail(res, 400, 'Ingresa un monto bruto válido.');
+  const number = clean(body.number, 40) || String(300 + db.boletas.length);
+  if (db.boletas.some((b) => b.number === number)) return fail(res, 409, 'Ya existe una boleta con ese número.');
+  const rate = Number(db.settings.retentionRate) || 0.1525;
+  const boleta = {
+    id: uid(),
+    number,
+    date: isDateStr(body.date) ? body.date : localDateStr(),
+    client: clean(body.client, 120) || db.settings.studioName,
+    gross,
+    retentionRate: rate,
+    notes: clean(body.notes, 300),
+    createdAt: nowISO(),
+  };
+  db.boletas.push(boleta);
+  scheduleSave();
+  sendJson(res, 201, { boleta });
+});
+
+route('DELETE', '/api/admin/boletas/:id', 'admin', ({ params, res }) => {
+  const index = db.boletas.findIndex((b) => b.id === params.id);
+  if (index < 0) return fail(res, 404, 'Boleta no encontrada.');
+  db.boletas.splice(index, 1);
+  scheduleSave();
+  sendJson(res, 200, { ok: true });
+});
+
+route('POST', '/api/admin/payments', 'admin', ({ body, res }) => {
+  const amount = round(body.amount);
+  if (!Number.isFinite(Number(body.amount)) || amount <= 0) return fail(res, 400, 'Ingresa un monto válido.');
+  const concept = clean(body.concept, 120);
+  if (concept.length < 2) return fail(res, 400, 'Indica el concepto del ingreso.');
+  const date = isDateStr(body.date) ? body.date : localDateStr();
+  const payment = {
+    id: uid(),
+    userId: null,
+    kind: 'manual',
+    refId: null,
+    concept,
+    category: INCOME_CATEGORIES.includes(clean(body.category, 40)) ? clean(body.category, 40) : 'Otros',
+    method: PAYMENT_METHODS.includes(clean(body.method, 40)) ? clean(body.method, 40) : 'Transferencia',
+    amount,
+    payerName: clean(body.client, 120),
+    reference: clean(body.reference, 120),
+    status: 'confirmed',
+    createdAt: nowISO(),
+    confirmedAt: parseLocal(date, '12:00').toISOString(),
+    confirmedBy: 'admin',
+  };
+  db.payments.push(payment);
+  scheduleSave();
+  sendJson(res, 201, { payment });
 });
 
 route('GET', '/api/admin/users', 'admin', ({ query }) => {
@@ -1561,6 +1813,17 @@ route('POST', '/api/admin/totp/reset', 'admin', ({ body, user, res }) => {
   sendJson(res, 200, { setupToken, secret, otpauth: otpauthUri(secret, user.email) });
 });
 
+function sendCsv(res, filename, rows) {
+  const body = `\uFEFF${rows.map((row) => row.map((v) => `"${String(v ?? '').replace(/"/g, '""')}"`).join(';')).join('\r\n')}`;
+  res.writeHead(200, {
+    'Content-Type': 'text/csv; charset=utf-8',
+    'Content-Disposition': `attachment; filename="${filename}"`,
+    ...SECURITY_HEADERS,
+    'Cache-Control': 'no-store',
+  });
+  res.end(body);
+}
+
 route('GET', '/api/admin/export/boletas.csv', 'admin', ({ res }) => {
   const rate = Number(db.settings.retentionRate) || 0.1525;
   const rows = db.payments
@@ -1606,8 +1869,50 @@ route('GET', '/api/admin/export/pagos.csv', 'admin', ({ res }) => {
   res.end(body);
 });
 
-/* ------------------------------------------------------------------ */
-/*  Servidor HTTP                                                      */
+route('GET', '/api/admin/export/ingresos.csv', 'admin', ({ query, res }) => {
+  const key = validMonth(query.get('month'));
+  const rows = confirmedPaymentsInMonth(key)
+    .slice()
+    .sort((a, b) => String(a.confirmedAt).localeCompare(String(b.confirmedAt)))
+    .map((p) => [
+      localDateStr(new Date(p.confirmedAt)),
+      p.reference || '',
+      paymentUser(p)?.name || '',
+      paymentConcept(p),
+      paymentCategory(p),
+      p.method || 'Transferencia',
+      round(p.amount),
+    ]);
+  sendCsv(res, `ingresos-${key}.csv`, [['Fecha', 'Referencia', 'Cliente', 'Concepto', 'Categoría', 'Método', 'Monto'], ...rows]);
+});
+
+route('GET', '/api/admin/export/gastos.csv', 'admin', ({ query, res }) => {
+  const key = validMonth(query.get('month'));
+  const rows = db.expenses
+    .filter((e) => monthOf(e.date) === key)
+    .slice()
+    .sort((a, b) => String(a.date).localeCompare(String(b.date)))
+    .map((e) => [e.date, e.category, e.description, e.method, round(e.amount)]);
+  sendCsv(res, `gastos-${key}.csv`, [['Fecha', 'Categoría', 'Descripción', 'Método', 'Monto'], ...rows]);
+});
+
+route('GET', '/api/admin/export/honorarios.csv', 'admin', ({ query, res }) => {
+  const key = validMonth(query.get('month'));
+  const fallback = Number(db.settings.retentionRate) || 0.1525;
+  const rows = db.boletas
+    .filter((b) => monthOf(b.date) === key)
+    .slice()
+    .sort((a, b) => String(a.date).localeCompare(String(b.date)))
+    .map((b) => {
+      const rate = b.retentionRate === undefined || b.retentionRate === null ? fallback : Number(b.retentionRate);
+      const gross = round(b.gross);
+      const retention = Math.round(gross * rate);
+      return [b.number, b.date, b.client, gross, retention, gross - retention, b.notes || ''];
+    });
+  sendCsv(res, `honorarios-${key}.csv`, [['N°', 'Fecha', 'Cliente', 'Monto bruto', 'Retención', 'Neto', 'Notas'], ...rows]);
+});
+
+
 /* ------------------------------------------------------------------ */
 
 const MIME = {

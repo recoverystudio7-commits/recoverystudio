@@ -4,7 +4,7 @@
    Las llamadas /api nunca se guardan en caché.
    ========================================================================== */
 
-const VERSION = 'rs-v2-2026-11';
+const VERSION = 'rs-v3-2026-11';
 const SHELL = [
   '/',
   '/index.html',
@@ -19,6 +19,7 @@ const SHELL = [
   '/js/admin.js',
   '/js/admin-catalog.js',
   '/js/admin-ops.js',
+  '/js/admin-finance.js',
   '/vendor/qrcode.js',
   '/favicon.svg',
   '/icons/icon-192.png',

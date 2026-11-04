@@ -12,6 +12,7 @@ import {
   pageAdminUsers, pageAdminPlans, pageAdminRoutines,
 } from './admin-catalog.js';
 import { pageAdminPayments, pageAdminConfig } from './admin-ops.js';
+import { pageAdminFinance, pageAdminHonorarios } from './admin-finance.js';
 import { pageAdminReviews } from './reviews.js';
 
 const TITLES = {
@@ -20,6 +21,8 @@ const TITLES = {
   '/admin/usuarios': ['Usuarios', 'Clientes y su historial'],
   '/admin/planes': ['Planes y servicios', 'Catálogo, valores y solicitudes'],
   '/admin/pagos': ['Pagos e ingresos', 'Transferencias y boletas'],
+  '/admin/finanzas': ['Finanzas', 'Ingresos, gastos y utilidad'],
+  '/admin/honorarios': ['Honorarios', 'Boletas, retención y neto'],
   '/admin/rutinas': ['Rutinas', 'Ejercicios asignados a clientes'],
   '/admin/resenas': ['Reseñas', 'Moderación de opiniones de clientes'],
   '/admin/config': ['Configuración', 'Datos del studio y seguridad'],
@@ -45,6 +48,8 @@ export function renderAdmin(path) {
   if (path === '/admin/usuarios') return run(() => pageAdminUsers(content));
   if (path === '/admin/planes') return run(() => pageAdminPlans(content));
   if (path === '/admin/pagos') return run(() => pageAdminPayments(content));
+  if (path === '/admin/finanzas') return run(() => pageAdminFinance(content));
+  if (path === '/admin/honorarios') return run(() => pageAdminHonorarios(content));
   if (path === '/admin/rutinas') return run(() => pageAdminRoutines(content));
   if (path === '/admin/resenas') return run(() => pageAdminReviews(content));
   if (path === '/admin/config') return run(() => pageAdminConfig(content));
@@ -62,6 +67,7 @@ async function pageDashboard(content) {
 
   content.innerHTML = `
     ${pageHead('Dashboard', `Resumen de ${state.config?.studioName || 'Recovery Studio'} · ${fmtDate(new Date(), { weekday: 'long', day: 'numeric', month: 'long' })}`, `
+      <a class="btn ghost sm" href="#/admin/finanzas">${icon('trendingUp')} Finanzas</a>
       <a class="btn ghost sm" href="#/admin/pagos">${icon('wallet')} Ver pagos</a>
       <a class="btn sm" href="#/admin/agenda">${icon('calendarCheck')} Revisar agenda</a>`)}
 
@@ -86,6 +92,12 @@ async function pageDashboard(content) {
         <div class="kpi-value">${money(inc.net)}</div>
         <div class="kpi-foot">Después de retención de boleta</div>
       </div>
+    </div>
+
+    <div class="finance-strip">
+      <div class="finance-box"><span>Gastos del mes</span><b>${money(inc.expenses || 0)}</b></div>
+      <div class="finance-box orange"><span>Utilidad del mes</span><b>${money(inc.profit || 0)}</b></div>
+      <div class="finance-box dark"><span>Margen del mes</span><b>${inc.month ? Math.round(((inc.profit || 0) / inc.month) * 100) : 0}%</b></div>
     </div>
 
     <div class="metric-row">
