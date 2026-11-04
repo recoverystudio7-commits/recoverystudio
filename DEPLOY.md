@@ -51,11 +51,17 @@ El primer arranque crea la base con el administrador, los 5 servicios y los 4 pl
 
 1. En Vercel: **Settings → Domains → Add** `www.recoverystudio.cl` y `recoverystudio.cl`.
 2. Vercel mostrará el registro exacto. En Cloudflare (DNS only / nube gris):
-   - `www` → CNAME al valor que entrega Vercel (por ejemplo `xxxx.vercel-dns-017.com`).
-   - `@` → A `76.76.21.21` (o el valor que muestre Vercel).
+   - `www` → CNAME `cname.vercel-dns.com`.
+   - `@` → CNAME `cname.vercel-dns.com` (Cloudflare lo aplana a las IP anycast de Vercel). Alternativa: A `76.76.21.21`.
    - Eliminar los registros A/CNAME de GitHub Pages.
    - **No tocar los MX de Microsoft 365.**
-3. Esperar la emisión del certificado y activar la redirección `recoverystudio.cl → www.recoverystudio.cl`.
+3. Esperar la emisión del certificado. Ambos nombres quedan sirviendo la app (sin redirección canónica todavía).
+
+### Estado verificado
+
+- `https://recoverystudio.cl` y `https://www.recoverystudio.cl` → `200`, certificado válido, API `200`.
+- Vercel reporta los dos dominios con `misconfigured: false` (apex `configuredBy: A` por el aplanado del CNAME).
+- Si el equipo local no abre el apex justo después del cambio, es caché DNS negativa del router: `ipconfig /flushdns` y esperar la expiración del TTL (5–30 min).
 
 GitHub Pages puede quedarse como respaldo/staging en `recoverystudio7-commits.github.io/Recoverystudionativo/`, pero el dominio debe apuntar solo a un destino.
 
