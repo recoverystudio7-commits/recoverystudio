@@ -65,3 +65,10 @@ GitHub Pages puede quedarse como respaldo/staging en `recoverystudio7-commits.gi
 - **Actualizar:** `git push` a la rama conectada y Vercel redepliega.
 - **Rollback:** Vercel → Deployments → Promote to Production.
 - **TOTP del admin:** si se pierde el authenticator, con Redis hay que borrar el campo `totpEnabled` del usuario admin en Redis o usar el endpoint de reset con sesión admin (`POST /api/admin/totp/reset`).
+
+## 6. Reseñas, sauna y PWA
+
+- Reseñas: se guardan en `db.reviews` (Redis). Endpoints públicos `GET/POST /api/public/reviews` y de administración `GET/PATCH/DELETE /api/admin/reviews`.
+- Moderación: panel admin -> Reseñas. Solo las aprobadas aparecen en el sitio y en la portada.
+- Sauna: `/#/sauna` (la ruta `/sauna` redirige).
+- PWA: `manifest.webmanifest` + `sw.js`, con íconos en `public/icons/`. Al cambiar assets, subir `VERSION` en `sw.js` para invalidar la caché.

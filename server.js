@@ -1662,6 +1662,11 @@ async function handleRequest(req, res) {
     const pathname = decodeURIComponent(url.pathname);
 
     if (!pathname.startsWith('/api')) {
+      if (pathname === '/resenas' || pathname === '/sauna') {
+        res.writeHead(302, { Location: `/#${pathname}`, ...SECURITY_HEADERS });
+        res.end();
+        return;
+      }
       if (req.method !== 'GET' && req.method !== 'HEAD') {
         res.writeHead(405, SECURITY_HEADERS); res.end('Method not allowed'); return;
       }

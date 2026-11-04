@@ -3,6 +3,10 @@
   "framework": null,
   "outputDirectory": "public",
   "trailingSlash": false,
+  "redirects": [
+    { "source": "/resenas", "destination": "/#/resenas", "permanent": false },
+    { "source": "/sauna", "destination": "/#/sauna", "permanent": false }
+  ],
   "rewrites": [
     {
       "source": "/api/:path*",
