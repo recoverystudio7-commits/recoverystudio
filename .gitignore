@@ -1,10 +1,15 @@
 node_modules/
 data/db.json
 .vercel/
-.env.local
+.env
+.env.*
+!.env.example
 data/*.bak
 data/*.tmp
 .env
 *.log
 .DS_Store
 Thumbs.db
+
+.vercel
+.env*
