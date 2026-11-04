@@ -78,3 +78,36 @@ GitHub Pages puede quedarse como respaldo/staging en `recoverystudio7-commits.gi
 - Moderación: panel admin -> Reseñas. Solo las aprobadas aparecen en el sitio y en la portada.
 - Sauna: `/#/sauna` (la ruta `/sauna` redirige).
 - PWA: `manifest.webmanifest` + `sw.js`, con íconos en `public/icons/`. Al cambiar assets, subir `VERSION` en `sw.js` para invalidar la caché.
+
+## 7. Notificaciones y seguridad admin
+
+Variables de entorno en Vercel (Production) para activar los avisos externos:
+
+| Variable | Uso |
+| --- | --- |
+| `RESEND_API_KEY` | Correo vía Resend. Sin ella, el canal de correo queda apagado. |
+| `RESEND_FROM` | Remitente verificado (opcional; por defecto `onboarding@resend.dev`). |
+| `NOTIFY_EMAIL` | Destino de los avisos (opcional; por defecto el correo del studio). |
+| `CALLMEBOT_PHONE` | WhatsApp en formato internacional, ej. `+56912345678`. |
+| `CALLMEBOT_APIKEY` | API key que entrega el bot de CallMeBot. |
+| `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_WHATSAPP_FROM`, `TWILIO_WHATSAPP_TO` | Alternativa a CallMeBot. |
+
+- Sin credenciales, todo queda igualmente registrado en el panel -> **Notificaciones** (últimas 300).
+- Botón **Enviar prueba** en Configuración y en Notificaciones para validar los canales.
+- CallMeBot: agregar el número del bot a WhatsApp, enviarle `I allow callmebot to send me messages` y guardar el teléfono + apikey recibidos.
+- Resend: crear una API key en resend.com; con `onboarding@resend.dev` solo se puede enviar al correo dueño de la cuenta.
+
+### Contraseña del administrador
+
+- La política exige **mínimo 16 caracteres** para el admin (los clientes mantienen 4).
+- Reset por consola sobre Redis de producción (detén el tráfico o hazlo en una ventana corta):
+
+```powershell
+$env:KV_REST_API_URL="..."
+$env:KV_REST_API_TOKEN="..."
+npm run set-admin-password -- --email recoverystudio7@gmail.com
+npm run set-admin-password -- --email recoverystudio7@gmail.com --reset-totp   # además desactiva TOTP
+```
+
+- El script cierra las sesiones anteriores (`tokenVersion + 1`) y permite `--password` para fijar una clave conocida.
+- **Datos de prueba:** Configuración -> Zona de riesgo -> Borrar datos de prueba (exige contraseña y escribir `BORRAR`). Conserva catálogo, configuración y admin.
