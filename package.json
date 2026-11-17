@@ -8,9 +8,13 @@
     "start": "node server.js",
     "dev": "node server.js",
     "reset-totp": "node scripts/reset-totp.mjs",
-    "set-admin-password": "node scripts/set-admin-password.mjs"
+    "set-admin-password": "node scripts/set-admin-password.mjs",
+    "typecheck": "tsc --checkJs --noEmit --skipLibCheck"
   },
   "engines": {
     "node": "22.x"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2"
   }
 }
