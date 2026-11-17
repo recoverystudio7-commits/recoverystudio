@@ -685,6 +685,44 @@
     return state.routines.find((r) => r.userId === userId) || null;
   }
 
+  const PERCENTAGE_TABLE = [
+    { min: 90, max: 100, reps: '1-3', sets: '4-6', rest: '3-5 min', rpe: '9-10' },
+    { min: 80, max: 89,  reps: '3-6', sets: '4-5', rest: '2-3 min', rpe: '8-9'  },
+    { min: 70, max: 79,  reps: '6-8', sets: '3-4', rest: '2-3 min', rpe: '7-8'  },
+    { min: 60, max: 69,  reps: '8-12', sets: '3-4', rest: '90-120s', rpe: '6-7' },
+    { min: 50, max: 59,  reps: '12-15', sets: '3-4', rest: '60-90s', rpe: '5-6' },
+    { min: 40, max: 49,  reps: '15-20', sets: '2-3', rest: '60-90s', rpe: '4-5' },
+  ];
+
+  function getParamsForPercentage(pct) {
+    const row = PERCENTAGE_TABLE.find((r) => pct >= r.min && pct <= r.max) || PERCENTAGE_TABLE[2];
+    return { reps: row.reps, sets: row.sets, rest: row.rest, rpe: row.rpe };
+  }
+
+  function calculateWeight(oneRM, percentage) {
+    return Math.round(oneRM * (percentage / 100) * 2) / 2;
+  }
+
+  function generateRoutineFromMaximals(userMaximals, exerciseSelection, defaultPercentage) {
+    defaultPercentage = defaultPercentage || 75;
+    return exerciseSelection.map((ex) => {
+      const oneRM = userMaximals[ex.exerciseId] || userMaximals[ex.name] || userMaximals[ex.exercise];
+      if (!oneRM) return null;
+      const pct = ex.percentage || defaultPercentage;
+      const weight = calculateWeight(oneRM, pct);
+      const params = getParamsForPercentage(pct);
+      return {
+        name: ex.name || ex.exercise,
+        sets: ex.setsOverride || params.sets,
+        reps: ex.repsOverride || params.reps,
+        rest: ex.restOverride || params.rest,
+        load: (ex.loadOverride != null ? ex.loadOverride : `${weight} kg`),
+        percentage: `${pct}% 1RM`,
+        notes: `1RM: ${oneRM} kg | RPE ${params.rpe} | ${pct}%`,
+      };
+    }).filter(Boolean);
+  }
+
   function approvalsInMonth(key) {
     return state.payments.filter((p) => p.status === 'aprobado' && monthKey(p.date) === key);
   }
@@ -778,7 +816,7 @@
   };
   RS.data = {
     getUser, getService, serviceName, servicePrice, userSessions, upcomingSessions,
-    nextSession, sessionsOn, availableSlots, hoursForDay, blockSlot, unblockSlot, blockedSlotsOn, userMaxes, userRoutine, approvalsInMonth,
+    nextSession, sessionsOn, availableSlots, hoursForDay, blockSlot, unblockSlot, blockedSlotsOn, userMaxes, userRoutine, approvalsInMonth, PERCENTAGE_TABLE, getParamsForPercentage, calculateWeight, generateRoutineFromMaximals,
     expensesInMonth, boletasInMonth, financeSummary, monthsBack, addAudit, whatsappUrl,
     bankData,
   };

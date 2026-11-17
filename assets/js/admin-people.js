@@ -334,6 +334,91 @@
     };
   }
 
+  function openGenerateFrom1RMModal(user, draft, render) {
+    const maxes = RS.data.userMaxes(user.id);
+    if (!maxes.length) {
+      UI.toast('El usuario no tiene maximales (1RM) registrados.', 'error');
+      return;
+    }
+    const exercises = maxes.map((m) => ({
+      exercise: m.exercise,
+      oneRM: Number(m.current) || 0,
+      unit: m.unit || 'kg',
+      selected: true,
+      percentage: 75,
+    })).filter((e) => e.oneRM > 0);
+
+    if (!exercises.length) {
+      UI.toast('El usuario no tiene maximales v\u00e1lidos.', 'error');
+      return;
+    }
+
+    const rowHtml = (ex, idx) => `<div class="max-gen-row">
+      <label class="check"><input type="checkbox" data-gen-sel="${idx}" ${ex.selected ? 'checked' : ''}><span>${U.esc(ex.exercise)} <small>(${U.esc(ex.oneRM)} ${U.esc(ex.unit)})</small></span></label>
+      <input class="input re-small" type="number" min="40" max="100" data-gen-pct="${idx}" value="${ex.percentage}">
+      <span class="form-hint" data-gen-preview="${idx}"></span>
+    </div>`;
+
+    const root = UI.modal({
+      title: `Generar rutina desde 1RM \u2014 ${user.name}`,
+      size: 'lg',
+      body: `<p class="form-hint">${UI.icon('info', 14)} Selecciona ejercicios y ajusta el % de 1RM. El peso, series, reps y descanso se calculan autom\u00e1ticamente.</p>
+        <div class="field"><label>Nombre del d\u00eda</label><input class="input" id="gen-day-name" value="D\u00eda generado desde 1RM"></div>
+        <div id="gen-rows" class="max-gen-rows">${exercises.map(rowHtml).join('')}</div>`,
+      footer: `<button class="btn btn-ghost" data-modal-close>Cancelar</button><button class="btn btn-primary" data-gen-confirm>${UI.icon('check', 16)} Generar</button>`,
+    });
+    if (!root) return;
+
+    const updatePreview = (idx) => {
+      const ex = exercises[idx];
+      const cb = root.querySelector(`[data-gen-sel="${idx}"]`);
+      const pctInput = root.querySelector(`[data-gen-pct="${idx}"]`);
+      const preview = root.querySelector(`[data-gen-preview="${idx}"]`);
+      if (!cb || !cb.checked) { if (preview) preview.textContent = ''; return; }
+      const pct = Number(pctInput.value) || 75;
+      const weight = RS.data.calculateWeight(ex.oneRM, pct);
+      const params = RS.data.getParamsForPercentage(pct);
+      if (preview) preview.textContent = `\u2192 ${weight} ${ex.unit} \u00b7 ${params.sets} series \u00b7 ${params.reps} reps \u00b7 ${params.rest}`;
+    };
+    exercises.forEach((_, idx) => updatePreview(idx));
+
+    root.addEventListener('input', (e) => {
+      const sel = e.target && e.target.dataset && e.target.dataset.genSel;
+      const pct = e.target && e.target.dataset && e.target.dataset.genPct;
+      if (sel != null) updatePreview(Number(sel));
+      if (pct != null) updatePreview(Number(pct));
+    });
+
+    root.querySelector('[data-gen-confirm]').addEventListener('click', () => {
+      const items = [];
+      exercises.forEach((ex, idx) => {
+        const cb = root.querySelector(`[data-gen-sel="${idx}"]`);
+        if (!cb || !cb.checked) return;
+        const pctInput = root.querySelector(`[data-gen-pct="${idx}"]`);
+        const pct = Number(pctInput.value) || 75;
+        const params = RS.data.getParamsForPercentage(pct);
+        const weight = RS.data.calculateWeight(ex.oneRM, pct);
+        items.push({
+          name: ex.exercise,
+          sets: params.sets,
+          reps: params.reps,
+          load: `${weight} ${ex.unit}`,
+          rest: params.rest,
+          notes: `1RM: ${ex.oneRM} ${ex.unit} | ${pct}% | RPE ${params.rpe}`,
+        });
+      });
+      if (!items.length) {
+        UI.toast('Selecciona al menos un ejercicio.', 'error');
+        return;
+      }
+      const dayName = (root.querySelector('#gen-day-name').value || '').trim() || 'D\u00eda generado desde 1RM';
+      draft.days.push({ id: U.uid('rday'), name: dayName, focus: 'Generado desde 1RM', items });
+      UI.closeModal();
+      render();
+      UI.toast(`${items.length} ejercicios generados.`, 'success');
+    });
+  }
+
   function openRoutineEditor(user) {
     const existing = RS.data.userRoutine(user.id);
     const draft = existing
@@ -368,7 +453,7 @@
       <div class="routine-photo-editor">${photoMarkup('start', 'Foto de inicio')}${photoMarkup('end', 'Foto de final')}</div>
       <div class="routine-editor" id="routine-editor"></div>
       <div class="routine-editor-foot"><button type="button" class="btn btn-outline btn-sm" data-r-add-day>${UI.icon('plus', 15)} Agregar día</button><span class="form-hint">${UI.icon('info', 13)} Los cambios se guardan al finalizar.</span></div>`,
-      footer: `<button class="btn btn-ghost" data-modal-close>Cancelar</button><button class="btn btn-primary" data-routine-save>${UI.icon('check', 16)} Guardar rutina</button>`,
+      footer: `<button class="btn btn-ghost" data-modal-close>Cancelar</button><button type="button" class="btn btn-outline" data-r-generate-1rm>${UI.icon('bar-chart', 15)} Generar desde 1RM</button><button class="btn btn-primary" data-routine-save>${UI.icon('check', 16)} Guardar rutina</button>`,
     });
     if (!root) return;
     const container = root.querySelector('#routine-editor');
@@ -398,6 +483,11 @@
       </div>`).join('');
     };
     render();
+
+    const genBtn = root.querySelector('[data-r-generate-1rm]');
+    if (genBtn) genBtn.addEventListener('click', () => {
+      openGenerateFrom1RMModal(user, draft, render);
+    });
 
     root.addEventListener('change', async (e) => {
       const input = e.target.closest('[data-r-photo]');
