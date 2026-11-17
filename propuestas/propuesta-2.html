@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="es-CL">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Propuesta 2 · Laboratorio de rendimiento — Recovery Studio</title>
+<meta name="description" content="Propuesta de rediseño para Recovery Studio: kinesiología, masoterapia y sauna con atención 1:1 en Gorbea, Araucanía.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=Barlow:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --void:#0A0A0B;
+    --carbon:#111113;
+    --steel:#17181B;
+    --steel-2:#1E2024;
+    --chalk:#F3F2EE;
+    --chalk-soft:#C7C7C1;
+    --muted:#83837D;
+    --signal:#FF4D00;
+    --signal-deep:#C93C00;
+    --acid:#D9FF3D;
+    --line:rgba(243,242,238,.12);
+    --line-strong:rgba(243,242,238,.26);
+    --display:"Barlow Condensed","Arial Narrow",sans-serif;
+    --sans:"Barlow",system-ui,-apple-system,sans-serif;
+    --mono:"JetBrains Mono",ui-monospace,monospace;
+    --wrap:1240px;
+    --pad:clamp(20px,4vw,56px);
+  }
+  *,*::before,*::after{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;background:var(--void);color:var(--chalk);
+    font-family:var(--sans);font-size:16px;line-height:1.6;font-weight:400;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  }
+  body::before{
+    content:"";position:fixed;inset:0;z-index:9998;pointer-events:none;opacity:.028;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  a{color:inherit}
+  img,svg{display:block;max-width:100%}
+  ::selection{background:var(--signal);color:#0A0A0B}
+  :focus-visible{outline:2px solid var(--signal);outline-offset:3px}
+  .skip{position:absolute;left:-9999px;top:0;background:var(--signal);color:#0A0A0B;padding:12px 18px;z-index:10000;font-size:14px;font-weight:600}
+  .skip:focus{left:12px;top:12px}
+  .wrap{width:min(var(--wrap),100% - var(--pad)*2);margin-inline:auto}
+  .mono{font-family:var(--mono);font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;font-weight:500}
+  .signal{color:var(--signal)}
+  .rule{height:1px;background:var(--line);border:0;margin:0}
+
+  /* ---------- header ---------- */
+  .topbar{position:sticky;top:0;z-index:100;background:rgba(10,10,11,.86);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+  .topbar-inner{display:flex;align-items:center;gap:30px;min-height:70px}
+  .brand{display:flex;align-items:center;gap:12px;text-decoration:none;flex:0 0 auto}
+  .brand-mark{
+    width:34px;height:34px;background:var(--signal);color:#0A0A0B;
+    display:grid;place-items:center;font-family:var(--display);
+    font-weight:700;font-size:21px;line-height:1;letter-spacing:-.03em;
+    transform:skewX(-8deg);
+  }
+  .brand-mark span{display:block;transform:skewX(8deg)}
+  .brand-name{display:flex;flex-direction:column;line-height:1}
+  .brand-name b{font-family:var(--display);font-weight:600;font-size:18px;letter-spacing:.04em;text-transform:uppercase}
+  .brand-name span{font-family:var(--mono);font-size:8.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);margin-top:5px}
+  .nav{display:flex;align-items:center;gap:24px;margin-left:auto;overflow-x:auto;scrollbar-width:none}
+  .nav::-webkit-scrollbar{display:none}
+  .nav a{
+    font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;
+    text-decoration:none;color:var(--chalk-soft);white-space:nowrap;padding:8px 0;
+    border-bottom:1px solid transparent;transition:color .2s,border-color .2s;
+  }
+  .nav a:hover,.nav a:focus-visible{color:var(--chalk);border-bottom-color:var(--signal)}
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:10px;
+    font-family:var(--display);font-size:15px;font-weight:600;letter-spacing:.09em;
+    text-transform:uppercase;text-decoration:none;padding:12px 22px;
+    border:1px solid var(--line-strong);background:transparent;color:var(--chalk);
+    border-radius:0;cursor:pointer;transition:background .18s,color .18s,border-color .18s,transform .18s;
+  }
+  .btn:hover,.btn:focus-visible{background:var(--chalk);color:var(--void);border-color:var(--chalk)}
+  .btn-signal{background:var(--signal);border-color:var(--signal);color:#0A0A0B}
+  .btn-signal:hover,.btn-signal:focus-visible{background:var(--acid);border-color:var(--acid);color:#0A0A0B}
+  .btn-sm{padding:9px 16px;font-size:13px}
+  .header-cta{flex:0 0 auto;display:flex;gap:10px}
+
+  /* ---------- hero ---------- */
+  .hero{position:relative;padding:clamp(40px,6vw,84px) 0 0;overflow:hidden;border-bottom:1px solid var(--line)}
+  .hero::before{
+    content:"";position:absolute;inset:0;pointer-events:none;
+    background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+    background-size:74px 74px;opacity:.35;
+    mask-image:radial-gradient(120% 90% at 60% 0%,#000 10%,transparent 78%);
+    -webkit-mask-image:radial-gradient(120% 90% at 60% 0%,#000 10%,transparent 78%);
+  }
+  .hero::after{
+    content:"";position:absolute;width:640px;height:640px;right:-160px;top:-240px;pointer-events:none;
+    background:radial-gradient(circle,rgba(255,77,0,.16),transparent 66%);
+  }
+  .hero-inner{position:relative;display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,.55fr);gap:clamp(28px,4vw,56px);align-items:end}
+  .hero-kicker{display:flex;align-items:center;gap:14px;margin-bottom:clamp(18px,3vw,30px)}
+  .hero-kicker .dot{width:7px;height:7px;background:var(--signal);border-radius:50%;box-shadow:0 0 0 4px rgba(255,77,0,.16)}
+  .hero-kicker span{color:var(--chalk-soft)}
+  .hero h1{
+    font-family:var(--display);font-weight:600;font-size:clamp(3.4rem,10.4vw,8.6rem);
+    line-height:.84;letter-spacing:-.015em;text-transform:uppercase;margin:0;
+  }
+  .hero h1 .l{display:block}
+  .hero h1 .outline{
+    color:transparent;-webkit-text-stroke:1.5px var(--chalk);text-stroke:1.5px var(--chalk);
+  }
+  .hero h1 .accent-line{color:var(--signal)}
+  .hero-lead{
+    max-width:46ch;margin:clamp(22px,3vw,32px) 0 0;color:var(--chalk-soft);
+    font-size:clamp(14px,1.15vw,16.5px);line-height:1.65;font-weight:300;
+  }
+  .hero-lead b{color:var(--chalk);font-weight:500}
+  .hero-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:28px}
+  .hero-stats{display:flex;flex-wrap:wrap;gap:0;margin-top:clamp(30px,4vw,44px);border-top:1px solid var(--line-strong)}
+  .hero-stats div{padding:16px 26px 0 0;margin-right:26px;border-right:1px solid var(--line)}
+  .hero-stats div:last-child{border-right:0;margin-right:0;padding-right:0}
+  .hero-stats b{display:block;font-family:var(--display);font-size:clamp(1.6rem,2.6vw,2.2rem);font-weight:600;line-height:1;letter-spacing:-.01em}
+  .hero-stats small{display:block;font-family:var(--mono);font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-top:7px}
+
+  /* telemetry panel */
+  .panel{border:1px solid var(--line-strong);background:rgba(17,17,19,.82);backdrop-filter:blur(4px)}
+  .panel-head{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--line-strong)}
+  .panel-head h2{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;margin:0;color:var(--chalk-soft);font-weight:500}
+  .live{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:8.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--signal)}
+  .live::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--signal);animation:pulse 1.8s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+  .panel-rows{list-style:none;margin:0;padding:0}
+  .panel-rows li{display:grid;grid-template-columns:1fr auto;gap:2px 14px;padding:13px 18px;border-bottom:1px solid var(--line)}
+  .panel-rows li:last-child{border-bottom:0}
+  .panel-rows .n{font-size:13.5px;font-weight:500;color:var(--chalk)}
+  .panel-rows .m{grid-column:1;font-family:var(--mono);font-size:8.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-top:2px}
+  .panel-rows .p{grid-column:2;grid-row:1 / span 2;align-self:center;font-family:var(--mono);font-size:12.5px;color:var(--signal);white-space:nowrap}
+  .panel-foot{padding:16px 18px;border-top:1px solid var(--line-strong);display:flex;flex-direction:column;gap:12px}
+  .panel-foot .row{display:flex;justify-content:space-between;gap:12px;font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+  .panel-foot .row b{color:var(--chalk-soft);font-weight:500}
+  .panel-foot .btn{width:100%}
+
+  /* ---------- marquee ---------- */
+  .marquee{
+    position:relative;background:var(--signal);color:#0A0A0B;overflow:hidden;
+    border-block:1px solid var(--signal);
+  }
+  .marquee-track{display:flex;width:max-content;animation:slide 38s linear infinite}
+  .marquee span{
+    font-family:var(--display);font-size:15px;font-weight:600;letter-spacing:.13em;
+    text-transform:uppercase;padding:11px 0;white-space:nowrap;
+  }
+  .marquee span::after{content:"";display:inline-block;width:7px;height:7px;background:#0A0A0B;transform:rotate(45deg);margin:0 24px;vertical-align:middle}
+  @keyframes slide{to{transform:translateX(-50%)}}
+
+  /* ---------- section shell ---------- */
+  .section{padding:clamp(56px,8vw,104px) 0;border-bottom:1px solid var(--line)}
+  .section-head{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.6fr);gap:clamp(24px,5vw,64px);align-items:start;margin-bottom:clamp(32px,5vw,56px)}
+  .sec-tag{display:flex;flex-direction:column;gap:10px}
+  .sec-tag .idx{font-family:var(--mono);font-size:10px;letter-spacing:.2em;color:var(--signal)}
+  .sec-tag .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
+  .sec-title{
+    font-family:var(--display);font-weight:600;font-size:clamp(2.1rem,4.6vw,4rem);
+    line-height:.94;letter-spacing:-.01em;text-transform:uppercase;margin:0;max-width:22ch;
+  }
+  .sec-title em{font-style:normal;color:var(--signal)}
+  .sec-sub{margin:16px 0 0;max-width:58ch;color:var(--chalk-soft);font-size:14.5px;font-weight:300;line-height:1.65}
+
+  /* ---------- protocols ---------- */
+  .protocols{border-top:1px solid var(--line-strong)}
+  .protocol{
+    display:grid;grid-template-columns:96px minmax(0,1fr) 210px;gap:clamp(16px,3vw,40px);
+    align-items:start;padding:clamp(24px,3.4vw,38px) 0;border-bottom:1px solid var(--line);
+    text-decoration:none;position:relative;isolation:isolate;
+  }
+  .protocol::before{
+    content:"";position:absolute;inset:0 -20px;background:linear-gradient(90deg,rgba(255,77,0,.07),transparent 70%);
+    opacity:0;transition:opacity .22s;z-index:-1;
+  }
+  .protocol:hover::before,.protocol:focus-visible::before{opacity:1}
+  .protocol-num{
+    font-family:var(--display);font-size:clamp(2.2rem,3.6vw,3.2rem);font-weight:600;
+    line-height:.9;color:transparent;-webkit-text-stroke:1px var(--line-strong);letter-spacing:-.02em;
+    transition:color .22s,-webkit-text-stroke-color .22s;
+  }
+  .protocol:hover .protocol-num,.protocol:focus-visible .protocol-num{color:var(--signal);-webkit-text-stroke-color:var(--signal)}
+  .protocol h3{
+    font-family:var(--display);font-size:clamp(1.5rem,2.5vw,2.05rem);font-weight:600;
+    text-transform:uppercase;letter-spacing:.01em;line-height:1.02;margin:0 0 10px;
+  }
+  .protocol p{margin:0;color:var(--chalk-soft);font-size:13.8px;max-width:52ch;font-weight:300;line-height:1.62}
+  .protocol-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
+  .tag{
+    font-family:var(--mono);font-size:8.5px;letter-spacing:.12em;text-transform:uppercase;
+    border:1px solid var(--line);padding:4px 8px;color:var(--muted);
+  }
+  .protocol-meta{text-align:right;padding-top:4px}
+  .protocol-meta .price{display:block;font-family:var(--display);font-size:1.5rem;font-weight:600;color:var(--signal);line-height:1}
+  .protocol-meta .dur{display:block;font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-top:7px}
+  .protocol-meta .arrow{display:block;margin-top:14px;font-family:var(--mono);font-size:14px;color:var(--chalk-soft);transition:transform .2s,color .2s}
+  .protocol:hover .protocol-meta .arrow{transform:translateX(5px);color:var(--signal)}
+
+  /* ---------- method ---------- */
+  .method{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--line-strong)}
+  .step{padding:clamp(24px,3.2vw,36px) clamp(18px,2.4vw,30px);border-right:1px solid var(--line);position:relative}
+  .step:last-child{border-right:0}
+  .step::before{content:"";position:absolute;top:-1px;left:0;width:0;height:2px;background:var(--signal);transition:width .3s}
+  .step:hover::before{width:100%}
+  .step .n{font-family:var(--mono);font-size:9.5px;letter-spacing:.2em;color:var(--signal);display:block;margin-bottom:22px}
+  .step h3{font-family:var(--display);font-size:1.6rem;font-weight:600;text-transform:uppercase;letter-spacing:.02em;margin:0 0 10px}
+  .step p{margin:0;color:var(--chalk-soft);font-size:13.5px;font-weight:300;line-height:1.65}
+  .step .metric{margin-top:18px;padding-top:14px;border-top:1px solid var(--line);font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  .step .metric b{color:var(--chalk-soft);font-weight:500}
+
+  /* ---------- sauna band ---------- */
+  .sauna{
+    position:relative;overflow:hidden;border-bottom:1px solid var(--line);
+    background:linear-gradient(115deg,#240D03 0%,#150805 42%,#0A0A0B 100%);
+  }
+  .sauna::before{
+    content:"";position:absolute;inset:0;pointer-events:none;
+    background:radial-gradient(60% 90% at 12% 110%,rgba(255,77,0,.28),transparent 62%);
+  }
+  .sauna-inner{position:relative;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(30px,5vw,72px);align-items:center;padding:clamp(56px,8vw,104px) 0}
+  .sauna h2{
+    font-family:var(--display);font-weight:600;font-size:clamp(2.6rem,6vw,5rem);
+    line-height:.88;text-transform:uppercase;letter-spacing:-.01em;margin:0;
+  }
+  .sauna h2 em{font-style:normal;color:var(--signal)}
+  .sauna p{margin:20px 0 0;max-width:44ch;color:var(--chalk-soft);font-size:14px;font-weight:300;line-height:1.65}
+  .sauna-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:26px}
+  .protocol-list{list-style:none;margin:0;padding:0;border-top:1px solid var(--line-strong)}
+  .protocol-list li{display:grid;grid-template-columns:52px minmax(0,1fr);gap:16px;padding:18px 0;border-bottom:1px solid var(--line);align-items:baseline}
+  .protocol-list .t{font-family:var(--mono);font-size:11px;color:var(--signal);letter-spacing:.08em}
+  .protocol-list b{display:block;font-size:13.5px;font-weight:500;color:var(--chalk)}
+  .protocol-list small{display:block;color:var(--muted);font-size:12px;margin-top:3px;line-height:1.5}
+
+  /* ---------- pricing ---------- */
+  .pricing-grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:clamp(28px,4.5vw,60px);align-items:start}
+  .block-title{
+    display:flex;align-items:center;gap:12px;font-family:var(--mono);font-size:10px;
+    letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin:0 0 16px;
+  }
+  .block-title::after{content:"";flex:1;height:1px;background:var(--line)}
+  .ptable{width:100%;border-collapse:collapse}
+  .ptable th{
+    text-align:left;font-family:var(--mono);font-size:8.5px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--muted);font-weight:400;padding:0 0 10px;border-bottom:1px solid var(--line-strong);
+  }
+  .ptable th:last-child,.ptable td:last-child{text-align:right}
+  .ptable td{padding:15px 0;border-bottom:1px solid var(--line);vertical-align:top}
+  .ptable td:first-child b{display:block;font-size:14px;font-weight:500;color:var(--chalk)}
+  .ptable td:first-child small{display:block;color:var(--muted);font-size:11.5px;margin-top:3px;line-height:1.45;max-width:38ch}
+  .ptable td.amount{font-family:var(--mono);font-size:13px;color:var(--signal);white-space:nowrap;padding-left:16px}
+  .ptable td.amount small{display:block;color:var(--muted);font-size:9px;letter-spacing:.08em;margin-top:4px}
+  .plan-card{
+    border:1px solid var(--line-strong);background:var(--carbon);padding:22px;
+    display:flex;flex-direction:column;gap:14px;position:relative;
+  }
+  .plan-card + .plan-card{margin-top:12px}
+  .plan-card.featured{border-color:var(--signal)}
+  .plan-card.featured::before{
+    content:"Más elegido";position:absolute;top:0;right:0;background:var(--signal);color:#0A0A0B;
+    font-family:var(--mono);font-size:8.5px;letter-spacing:.14em;text-transform:uppercase;
+    padding:5px 10px;font-weight:500;
+  }
+  .plan-card .k{font-family:var(--mono);font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+  .plan-card h3{font-family:var(--display);font-size:1.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.02em;margin:0;line-height:1}
+  .plan-card .p{font-family:var(--display);font-size:2rem;font-weight:600;color:var(--signal);line-height:1}
+  .plan-card .p small{font-family:var(--mono);font-size:9px;letter-spacing:.1em;color:var(--muted);display:block;margin-top:6px;text-transform:uppercase}
+  .plan-card ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:7px}
+  .plan-card li{font-size:12.5px;color:var(--chalk-soft);padding-left:16px;position:relative;line-height:1.5}
+  .plan-card li::before{content:"";position:absolute;left:0;top:8px;width:6px;height:1px;background:var(--signal)}
+  .plan-card .btn{margin-top:4px;width:100%}
+  .note{
+    margin-top:22px;padding:14px 16px;border:1px solid var(--line);border-left:2px solid var(--signal);
+    font-size:12px;color:var(--muted);line-height:1.6;
+  }
+  .note b{color:var(--chalk-soft);font-weight:500}
+
+  /* ---------- location ---------- */
+  .loc-grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:clamp(30px,5vw,70px);align-items:stretch}
+  .loc-list{list-style:none;margin:0;padding:0;border-top:1px solid var(--line-strong)}
+  .loc-list li{display:grid;grid-template-columns:130px minmax(0,1fr);gap:18px;padding:15px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+  .loc-list .k{font-family:var(--mono);font-size:8.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);padding-top:3px}
+  .loc-list a{text-decoration:none;border-bottom:1px solid var(--line-strong);transition:color .2s,border-color .2s}
+  .loc-list a:hover,.loc-list a:focus-visible{color:var(--signal);border-color:var(--signal)}
+  .map{
+    position:relative;border:1px solid var(--line-strong);background:var(--steel);
+    min-height:320px;overflow:hidden;display:grid;place-items:center;
+  }
+  .map::before{
+    content:"";position:absolute;inset:0;
+    background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+    background-size:44px 44px;
+  }
+  .map::after{
+    content:"";position:absolute;left:0;right:0;top:50%;height:1px;
+    background:linear-gradient(90deg,transparent,var(--signal),transparent);opacity:.5;
+  }
+  .map-cross{position:absolute;width:1px;top:0;bottom:0;left:50%;background:linear-gradient(180deg,transparent,var(--signal),transparent);opacity:.5}
+  .map-pin{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:12px}
+  .map-ring{width:52px;height:52px;border:1px solid var(--signal);border-radius:50%;display:grid;place-items:center;position:relative}
+  .map-ring::after{content:"";width:8px;height:8px;background:var(--signal);border-radius:50%;box-shadow:0 0 0 6px rgba(255,77,0,.14)}
+  .map-pin span{font-family:var(--mono);font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--chalk-soft);background:var(--void);padding:5px 9px;border:1px solid var(--line-strong)}
+  .map-corner{position:absolute;font-family:var(--mono);font-size:8.5px;letter-spacing:.16em;color:var(--muted);padding:10px 12px}
+  .map-corner.tl{top:0;left:0}.map-corner.br{bottom:0;right:0}
+
+  /* ---------- cta ---------- */
+  .cta{background:var(--signal);color:#0A0A0B;padding:clamp(48px,7vw,88px) 0}
+  .cta-inner{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:32px}
+  .cta h2{
+    font-family:var(--display);font-weight:600;font-size:clamp(2.6rem,7vw,5.8rem);
+    line-height:.86;text-transform:uppercase;letter-spacing:-.015em;margin:0;max-width:15ch;
+  }
+  .cta h2 em{font-style:normal;color:transparent;-webkit-text-stroke:1.5px #0A0A0B}
+  .cta p{margin:18px 0 0;font-size:14px;max-width:42ch;color:rgba(10,10,11,.85);font-weight:400}
+  .cta-actions{display:flex;flex-wrap:wrap;gap:10px}
+  .cta .btn{border-color:#0A0A0B;color:#0A0A0B}
+  .cta .btn:hover,.cta .btn:focus-visible{background:#0A0A0B;color:var(--signal);border-color:#0A0A0B}
+  .cta .btn-dark{background:#0A0A0B;color:var(--chalk)}
+  .cta .btn-dark:hover,.cta .btn-dark:focus-visible{background:transparent;color:#0A0A0B}
+
+  /* ---------- footer ---------- */
+  .footer{padding:34px 0 42px;background:var(--void)}
+  .footer-top{display:flex;flex-wrap:wrap;justify-content:space-between;gap:24px;align-items:flex-start;padding-bottom:24px;border-bottom:1px solid var(--line)}
+  .footer-brand{display:flex;align-items:center;gap:13px}
+  .footer-brand b{font-family:var(--display);font-size:20px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;display:block}
+  .footer-brand small{font-family:var(--mono);font-size:8.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
+  .footer-links{display:flex;flex-wrap:wrap;gap:8px 20px}
+  .footer-links a{font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;text-decoration:none;color:var(--chalk-soft);border-bottom:1px solid transparent}
+  .footer-links a:hover,.footer-links a:focus-visible{color:var(--signal);border-color:var(--signal)}
+  .footer-bottom{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;padding-top:18px;color:var(--muted);font-size:11px}
+  .footer-bottom .mono{font-size:8.5px;letter-spacing:.14em}
+
+  @media (max-width:1000px){
+    .hero-inner{grid-template-columns:1fr}
+    .panel{max-width:520px;margin-top:8px}
+    .section-head{grid-template-columns:1fr;gap:14px}
+    .protocol{grid-template-columns:64px minmax(0,1fr)}
+    .protocol-meta{grid-column:2;display:flex;align-items:baseline;gap:16px;text-align:left;padding-top:0}
+    .protocol-meta .arrow{display:none}
+    .method{grid-template-columns:1fr}
+    .step{border-right:0;border-bottom:1px solid var(--line)}
+    .step:last-child{border-bottom:0}
+    .sauna-inner{grid-template-columns:1fr}
+    .pricing-grid{grid-template-columns:1fr}
+    .loc-grid{grid-template-columns:1fr}
+    .map{min-height:240px}
+  }
+  @media (max-width:760px){
+    .nav{display:none}
+    .header-cta{margin-left:auto}
+    .header-cta .ghost{display:none}
+    .hero-stats div{padding-right:18px;margin-right:18px}
+    .loc-list li{grid-template-columns:1fr;gap:4px}
+    .loc-list .k{padding-top:0}
+  }
+  @media (max-width:460px){
+    .hero-actions .btn,.cta-actions .btn,.hero-stats{width:100%}
+    .hero-actions .btn,.cta-actions .btn{justify-content:space-between}
+    .hero-stats{flex-direction:column}
+    .hero-stats div{border-right:0;margin-right:0;padding:12px 0;border-bottom:1px solid var(--line)}
+    .hero-stats div:last-child{border-bottom:0}
+    .panel-rows li{padding:12px 16px}
+    .panel-head,.panel-foot{padding-inline:16px}
+  }
+  @media (prefers-reduced-motion:reduce){
+    html{scroll-behavior:auto}
+    .marquee-track{animation:none}
+    .live::before{animation:none}
+    *{transition:none!important}
+  }
+</style>
+</head>
+<body>
+<a class="skip" href="#contenido">Ir al contenido</a>
+
+<header class="topbar">
+  <div class="wrap topbar-inner">
+    <a class="brand" href="#inicio" aria-label="Recovery Studio, inicio">
+      <span class="brand-mark" aria-hidden="true"><span>R</span></span>
+      <span class="brand-name"><b>Recovery Studio</b><span>Kinesiología · Performance</span></span>
+    </a>
+    <nav class="nav" aria-label="Secciones">
+      <a href="#servicios">Servicios</a>
+      <a href="#metodo">Método</a>
+      <a href="#sauna">Sauna</a>
+      <a href="#valores">Valores</a>
+      <a href="#donde">Ubicación</a>
+    </nav>
+    <div class="header-cta">
+      <a class="btn btn-sm ghost" href="https://wa.me/56965058439?text=Hola%20Recovery%20Studio%2C%20quiero%20consultar." target="_blank" rel="noopener">WhatsApp</a>
+      <a class="btn btn-signal btn-sm" href="#agendar">Agendar</a>
+    </div>
+  </div>
+</header>
+
+<main id="contenido">
+  <section class="hero" id="inicio">
+    <div class="wrap">
+      <div class="hero-inner">
+        <div>
+          <p class="hero-kicker mono"><span class="dot" aria-hidden="true"></span> Gorbea · Araucanía · Atención 1:1</p>
+          <h1>
+            <span class="l">Entrena.</span>
+            <span class="l outline">Recupera.</span>
+            <span class="l accent-line">Repite.</span>
+          </h1>
+          <p class="hero-lead">Kinesiología, masoterapia y sauna para sostener la carga de la semana. <b>Sin grupos, sin pautas genéricas.</b> Una sesión, un objetivo y un plan que puedas repetir.</p>
+          <div class="hero-actions">
+            <a class="btn btn-signal" href="#agendar">Agendar sesión <span aria-hidden="true">→</span></a>
+            <a class="btn" href="https://wa.me/56965058439?text=Hola%20Recovery%20Studio%2C%20quiero%20agendar%20una%20sesi%C3%B3n." target="_blank" rel="noopener">Hablar por WhatsApp</a>
+          </div>
+          <div class="hero-stats">
+            <div><b>75<span class="signal">'</span></b><small>Evaluación inicial</small></div>
+            <div><b>1:1</b><small>Siempre individual</small></div>
+            <div><b>8/12</b><small>Planes de sesiones</small></div>
+            <div><b>L–S</b><small>08:00–20:00</small></div>
+          </div>
+        </div>
+
+        <aside class="panel" aria-label="Valores de referencia">
+          <div class="panel-head">
+            <h2>Readout / sesiones</h2>
+            <span class="live">Agenda abierta</span>
+          </div>
+          <ul class="panel-rows">
+            <li><span class="n">Evaluación + pauta</span><span class="m">75 min</span><span class="p">$40.000</span></li>
+            <li><span class="n">Sesión Recovery</span><span class="m">60 min</span><span class="p">$35.000</span></li>
+            <li><span class="n">Entrenamiento 1:1</span><span class="m">60 min</span><span class="p">$30.000</span></li>
+            <li><span class="n">Asesoría online</span><span class="m">30 min</span><span class="p">$18.000</span></li>
+            <li><span class="n">Sauna húmedo</span><span class="m">20–30 min</span><span class="p">Consultar</span></li>
+          </ul>
+          <div class="panel-foot">
+            <div class="row"><span>Pago</span><b>Transferencia / MercadoPago</b></div>
+            <div class="row"><span>Documento</span><b>Boleta de honorarios</b></div>
+            <a class="btn btn-signal" href="#agendar">Reservar hora <span aria-hidden="true">→</span></a>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <div class="marquee" aria-hidden="true">
+    <div class="marquee-track">
+      <span>Atención 1:1</span><span>Evaluación funcional 75 min</span><span>Masoterapia deportiva</span><span>Sauna con protocolo</span><span>Planes 8 y 12</span><span>Boleta de honorarios</span><span>Lun–Sáb 08:00–20:00</span>
+      <span>Atención 1:1</span><span>Evaluación funcional 75 min</span><span>Masoterapia deportiva</span><span>Sauna con protocolo</span><span>Planes 8 y 12</span><span>Boleta de honorarios</span><span>Lun–Sáb 08:00–20:00</span>
+    </div>
+  </div>
+
+  <section class="section" id="servicios">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="sec-tag">
+          <span class="idx">01</span>
+          <span class="lbl">Servicios</span>
+        </div>
+        <div>
+          <h2 class="sec-title">Cuatro protocolos, <em>un mismo criterio.</em></h2>
+          <p class="sec-sub">Cada servicio se trabaja en sesión individual. El punto de entrada depende de tu historia, tu carga de entrenamiento y lo que necesitas resolver esta semana.</p>
+        </div>
+      </div>
+
+      <div class="protocols">
+        <a class="protocol" href="#agendar">
+          <span class="protocol-num" aria-hidden="true">01</span>
+          <span>
+            <h3>Kinesiología y rehabilitación</h3>
+            <p>Evaluación funcional de 75 minutos, trabajo manual y ejercicio terapéutico. El objetivo es volver a entrenar con criterio, no solo dejar de doler.</p>
+            <span class="protocol-tags"><span class="tag">Evaluación</span><span class="tag">Terapia manual</span><span class="tag">Ejercicio</span></span>
+          </span>
+          <span class="protocol-meta">
+            <span class="price">$40.000</span>
+            <span class="dur">75 min · 1:1</span>
+            <span class="arrow" aria-hidden="true">→</span>
+          </span>
+        </a>
+
+        <a class="protocol" href="#agendar">
+          <span class="protocol-num" aria-hidden="true">02</span>
+          <span>
+            <h3>Masoterapia deportiva</h3>
+            <p>Descarga muscular y movilidad asistida para cerrar la semana de carga sin acumular tensión. Incluye recomendaciones para las 24 horas siguientes.</p>
+            <span class="protocol-tags"><span class="tag">Descarga</span><span class="tag">Movilidad</span><span class="tag">Post-entreno</span></span>
+          </span>
+          <span class="protocol-meta">
+            <span class="price">$35.000</span>
+            <span class="dur">60 min · 1:1</span>
+            <span class="arrow" aria-hidden="true">→</span>
+          </span>
+        </a>
+
+        <a class="protocol" href="#agendar">
+          <span class="protocol-num" aria-hidden="true">03</span>
+          <span>
+            <h3>Sauna húmedo</h3>
+            <p>Calor con protocolo, hidratación y tiempos controlados. Se agenda como complemento del masaje o como cierre de un día de carga alta.</p>
+            <span class="protocol-tags"><span class="tag">Calor</span><span class="tag">Protocolo</span><span class="tag">Recuperación</span></span>
+          </span>
+          <span class="protocol-meta">
+            <span class="price">Consultar</span>
+            <span class="dur">20–30 min</span>
+            <span class="arrow" aria-hidden="true">→</span>
+          </span>
+        </a>
+
+        <a class="protocol" href="#agendar">
+          <span class="protocol-num" aria-hidden="true">04</span>
+          <span>
+            <h3>Entrenamiento 1:1 y asesorías</h3>
+            <p>En sala o por videollamada. Corrección técnica, registro de cargas y un plan que puedas sostener cuando no estés acá.</p>
+            <span class="protocol-tags"><span class="tag">Técnica</span><span class="tag">Cargas</span><span class="tag">Online</span></span>
+          </span>
+          <span class="protocol-meta">
+            <span class="price">$30.000</span>
+            <span class="dur">60 min · online $18.000</span>
+            <span class="arrow" aria-hidden="true">→</span>
+          </span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="metodo">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="sec-tag">
+          <span class="idx">02</span>
+          <span class="lbl">Método</span>
+        </div>
+        <div>
+          <h2 class="sec-title">Evaluar. Tratar. <em>Sostener.</em></h2>
+          <p class="sec-sub">El proceso parte por entender qué necesitas y termina cuando puedes seguir solo. Sin dependencia, sin sesiones infinitas.</p>
+        </div>
+      </div>
+
+      <div class="method">
+        <article class="step">
+          <span class="n">Paso 01</span>
+          <h3>Evaluar</h3>
+          <p>Revisamos antecedentes, movilidad y tolerancia a la carga. Definimos un objetivo medible antes de decidir el plan.</p>
+          <p class="metric">Duración <b>75 min</b></p>
+        </article>
+        <article class="step">
+          <span class="n">Paso 02</span>
+          <h3>Tratar</h3>
+          <p>Trabajo manual, ejercicio y educación en la misma sesión. Queremos que entiendas qué pasa y por qué hacemos cada cosa.</p>
+          <p class="metric">Formato <b>1:1 presencial</b></p>
+        </article>
+        <article class="step">
+          <span class="n">Paso 03</span>
+          <h3>Sostener</h3>
+          <p>Planes de 8 o 12 sesiones, controles y ajustes. La mejora no debería depender de venir para siempre.</p>
+          <p class="metric">Planes <b>8 / 12 sesiones</b></p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="sauna" id="sauna">
+    <div class="wrap sauna-inner">
+      <div>
+        <p class="mono signal" style="margin:0 0 16px">03 / Sauna</p>
+        <h2>Calor<br><em>controlado.</em></h2>
+        <p>No es solo entrar y aguantar. El sauna húmedo se usa con tiempos, hidratación y una salida progresiva. Si tienes alguna condición cardiovascular, lo conversamos antes.</p>
+        <div class="sauna-actions">
+          <a class="btn btn-signal" href="https://wa.me/56965058439?text=Hola%2C%20quiero%20consultar%20por%20la%20sauna." target="_blank" rel="noopener">Consultar disponibilidad</a>
+          <a class="btn" href="#valores">Ver valores</a>
+        </div>
+      </div>
+      <ol class="protocol-list">
+        <li><span class="t">01</span><span><b>Preparación</b><small>Hidratación previa y ropa adecuada. Sin entrenamiento intenso inmediatamente antes.</small></span></li>
+        <li><span class="t">02</span><span><b>Sesión</b><small>20 a 30 minutos según tolerancia, con control de tiempo y temperatura.</small></span></li>
+        <li><span class="t">03</span><span><b>Salida</b><small>Enfriamiento progresivo, agua y descanso antes de retomar actividad.</small></span></li>
+        <li><span class="t">04</span><span><b>Después</b><small>Ideal como complemento del masaje o al final de un día de carga alta.</small></span></li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="section" id="valores">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="sec-tag">
+          <span class="idx">04</span>
+          <span class="lbl">Valores</span>
+        </div>
+        <div>
+          <h2 class="sec-title">Precios claros. <em>Cero letra chica.</em></h2>
+          <p class="sec-sub">Sesiones individuales y planes para sostener el proceso. Pago por transferencia o link de MercadoPago. Emitimos boleta de honorarios.</p>
+        </div>
+      </div>
+
+      <div class="pricing-grid">
+        <div>
+          <h3 class="block-title">Sesiones individuales</h3>
+          <table class="ptable">
+            <thead><tr><th scope="col">Servicio</th><th scope="col">Valor</th></tr></thead>
+            <tbody>
+              <tr><td><b>Evaluación + pauta</b><small>Evaluación funcional, objetivos y pauta inicial.</small></td><td class="amount">$40.000<small>75 min</small></td></tr>
+              <tr><td><b>Sesión Recovery</b><small>Masoterapia, movilidad asistida y descarga.</small></td><td class="amount">$35.000<small>60 min</small></td></tr>
+              <tr><td><b>Entrenamiento 1:1</b><small>Corrección técnica y registro de cargas.</small></td><td class="amount">$30.000<small>60 min</small></td></tr>
+              <tr><td><b>Asesoría online</b><small>Revisión de rutina, cargas y recuperación.</small></td><td class="amount">$18.000<small>30 min</small></td></tr>
+              <tr><td><b>Sauna húmedo</b><small>Protocolo de hidratación y tiempos controlados.</small></td><td class="amount">Consultar<small>20–30 min</small></td></tr>
+            </tbody>
+          </table>
+          <p class="note"><b>Importante:</b> los valores son referenciales en pesos chilenos. Confirma disponibilidad y condiciones al agendar.</p>
+        </div>
+
+        <div>
+          <h3 class="block-title">Planes</h3>
+          <article class="plan-card">
+            <span class="k">Plan 01</span>
+            <h3>Recovery 8</h3>
+            <p class="p">$220.000<small>$27.500 por sesión</small></p>
+            <ul>
+              <li>8 sesiones de recuperación</li>
+              <li>Uso durante el mes</li>
+              <li>Prioridad al agendar</li>
+            </ul>
+            <a class="btn" href="#agendar">Elegir Recovery 8</a>
+          </article>
+          <article class="plan-card featured">
+            <span class="k">Plan 02</span>
+            <h3>Performance 12</h3>
+            <p class="p">$300.000<small>$25.000 por sesión</small></p>
+            <ul>
+              <li>12 sesiones combinadas</li>
+              <li>Rutina y control de maximales</li>
+              <li>Seguimiento entre sesiones</li>
+            </ul>
+            <a class="btn btn-signal" href="#agendar">Elegir Performance 12</a>
+          </article>
+          <p class="note"><b>Empresa:</b> programa de bienestar y prevención para equipos, a cotización según cantidad de personas y frecuencia.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="donde">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="sec-tag">
+          <span class="idx">05</span>
+          <span class="lbl">Ubicación</span>
+        </div>
+        <div>
+          <h2 class="sec-title">Un espacio tranquilo, <em>sin apuro.</em></h2>
+          <p class="sec-sub">Atendemos con hora agendada para que la sesión tenga el tiempo que necesita. Si necesitas coordinar un horario especial, escríbenos.</p>
+        </div>
+      </div>
+
+      <div class="loc-grid">
+        <ul class="loc-list">
+          <li><span class="k">Dirección</span><span>Pasaje uno, Gorbea<br>Región de la Araucanía, Chile</span></li>
+          <li><span class="k">Horario</span><span>Lunes a sábado · 08:00–20:00</span></li>
+          <li><span class="k">WhatsApp</span><span><a href="https://wa.me/56965058439" target="_blank" rel="noopener">+56 9 6505 8439</a></span></li>
+          <li><span class="k">Email</span><span><a href="mailto:recoverystudio7@gmail.com">recoverystudio7@gmail.com</a></span></li>
+          <li><span class="k">Pago</span><span>Transferencia bancaria o link de MercadoPago</span></li>
+          <li><span class="k">Documento</span><span>Boleta de honorarios para reembolso</span></li>
+        </ul>
+        <div class="map" aria-hidden="true">
+          <span class="map-corner tl">GORBEA · ARAUCANÍA</span>
+          <span class="map-corner br">PASAJE UNO</span>
+          <span class="map-cross"></span>
+          <span class="map-pin"><span class="map-ring"></span><span>Recovery Studio</span></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="cta" id="agendar">
+    <div class="wrap cta-inner">
+      <div>
+        <h2>La próxima sesión<br>parte con <em>un mensaje.</em></h2>
+        <p>Cuéntanos qué necesitas y te ayudamos a elegir la primera atención. Respondemos dentro del horario de atención.</p>
+      </div>
+      <div class="cta-actions">
+        <a class="btn btn-dark" href="https://wa.me/56965058439?text=Hola%20Recovery%20Studio%2C%20quiero%20agendar%20una%20primera%20sesi%C3%B3n." target="_blank" rel="noopener">Escribir por WhatsApp <span aria-hidden="true">→</span></a>
+        <a class="btn" href="mailto:recoverystudio7@gmail.com">Enviar un correo</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="wrap">
+    <div class="footer-top">
+      <div class="footer-brand">
+        <span class="brand-mark" aria-hidden="true"><span>R</span></span>
+        <span><b>Recovery Studio</b><small>Kinesiología · Performance · Gorbea</small></span>
+      </div>
+      <nav class="footer-links" aria-label="Enlaces del sitio">
+        <a href="#servicios">Kinesiología</a>
+        <a href="#servicios">Masajes</a>
+        <a href="#sauna">Sauna</a>
+        <a href="#valores">Precios</a>
+        <a href="https://wa.me/56965058439" target="_blank" rel="noopener">WhatsApp</a>
+      </nav>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 Recovery Studio. Valores referenciales en pesos chilenos.</span>
+      <span class="mono">Propuesta 02 · Laboratorio de rendimiento</span>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

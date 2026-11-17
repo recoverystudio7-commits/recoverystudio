@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agendar 2 bloques (30 min) — ejemplo</title>
+<style>
+  body { font-family:Inter,system-ui,sans-serif; margin:0; background:#eef1f6; color:#1a1a1a; }
+  .wrap { max-width:760px; margin:40px auto; padding:20px; }
+  .card { background:#fff; border-radius:16px; padding:24px; box-shadow:0 6px 20px rgba(0,0,0,.06); }
+  h1 { color:#0A2342; margin:0 0 6px; }
+  p { color:#555; font-size:14px; }
+  .service { background:#f4f6f9; padding:12px 14px; border-radius:10px; margin:12px 0; display:flex; justify-content:space-between; align-items:center; }
+  .service strong { color:#0A2342; }
+  .grid { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-top:12px; }
+  .slot { padding:10px 6px; border-radius:8px; text-align:center; font-size:13px; font-weight:600; border:1px solid #ccc; background:#fff; cursor:pointer; }
+  .slot.free { background:#e8f5e9; color:#1b5e20; border-color:#2e7d32; }
+  .slot.busy { background:#fce4ec; color:#880e4f; border-color:#c62828; text-decoration:line-through; cursor:not-allowed; }
+  .slot.selected { background:#0A2342; color:#fff; border-color:#0A2342; }
+  .slot.covered { background:#cfe2ff; color:#084298; border-color:#0d6efd; }
+  .note { font-size:12px; color:#888; margin-top:12px; }
+  .legend { display:flex; gap:12px; margin:10px 0; font-size:12px; }
+  .legend span { display:flex; align-items:center; gap:6px; }
+  .dot { width:12px; height:12px; border-radius:3px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <h1>Agendar: el usuario elige un inicio, el sistema reserva la duración</h1>
+    <p>Con slots de 30 min, el usuario <strong>no selecciona "2 bloques"</strong>: elige la hora de inicio y el sistema reserva automáticamente los 60 min (2 slots) para una Sesión Recovery. Los slots cubiertos se marcan en azul claro.</p>
+
+    <div class="service">
+      <div><strong>Sesión Recovery</strong><br><span style="font-size:12px;color:#666;">60 min · $35.000</span></div>
+      <span style="font-size:12px;color:#2e7d32;">Duración: 2 slots de 30 min</span>
+    </div>
+
+    <div class="legend">
+      <span><span class="dot" style="background:#e8f5e9;border:1px solid #2e7d32;"></span>Disponible</span>
+      <span><span class="dot" style="background:#0A2342;"></span>Inicio seleccionado</span>
+      <span><span class="dot" style="background:#cfe2ff;border:1px solid #0d6efd;"></span>Slot cubierto por la sesión</span>
+      <span><span class="dot" style="background:#fce4ec;border:1px solid #c62828;"></span>Ocupado</span>
+    </div>
+
+    <div class="grid">
+      <div class="slot free">17:30</div>
+      <div class="slot selected">18:00</div>
+      <div class="slot covered">18:30</div>
+      <div class="slot free">19:00</div>
+      <div class="slot free">19:30</div>
+      <div class="slot busy">20:00</div>
+      <div class="slot free">20:30</div>
+      <div class="slot free">21:00</div>
+    </div>
+    <p style="margin-top:12px;"><strong>Seleccionaste 18:00.</strong> Tu sesión ocupará 18:00–19:00 (2 bloques de 30 min). Los demás usuarios verán 18:00 y 18:30 como ocupados.</p>
+
+    <hr style="margin:18px 0;border:none;border-top:1px solid #eee;">
+
+    <div class="service">
+      <div><strong>Asesoría online</strong><br><span style="font-size:12px;color:#666;">30 min · $18.000</span></div>
+      <span style="font-size:12px;color:#2e7d32;">Duración: 1 slot de 30 min</span>
+    </div>
+    <div class="grid">
+      <div class="slot free">17:30</div>
+      <div class="slot free">18:00</div>
+      <div class="slot free">18:30</div>
+      <div class="slot free">19:00</div>
+      <div class="slot free">19:30</div>
+      <div class="slot busy">20:00</div>
+      <div class="slot free">20:30</div>
+      <div class="slot free">21:00</div>
+    </div>
+    <p style="margin-top:12px;">Para un servicio de 30 min, el usuario selecciona un solo bloque.</p>
+
+    <p class="note">El sistema valida solapamientos por duración completa, así que no se puede reservar un bloque que choque con otra sesión, aunque el inicio esté libre.</p>
+  </div>
+</div>
+</body>
+</html>

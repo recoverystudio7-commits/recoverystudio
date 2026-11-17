@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Modal de pago (antes)</title>
+<style>
+  body { font-family:Inter,system-ui,sans-serif; margin:0; background:#eef1f6; color:#1a1a1a; }
+  .overlay { position:fixed; inset:0; background:rgba(10,35,66,.55); display:flex; align-items:center; justify-content:center; padding:20px; }
+  .modal { background:#fff; border-radius:16px; max-width:520px; width:100%; padding:24px; box-shadow:0 20px 60px rgba(0,0,0,.25); }
+  .title { font-size:20px; font-weight:800; color:#0A2342; margin:0 0 4px; }
+  .sub { color:#666; font-size:13px; margin:0 0 16px; }
+  .callout { background:#e8f5e9; border-left:4px solid #2e7d32; padding:10px 12px; border-radius:8px; font-size:13px; margin-bottom:12px; }
+  .total { display:flex; justify-content:space-between; align-items:center; background:#f4f6f9; padding:12px 14px; border-radius:10px; margin:12px 0; }
+  .total strong { font-size:20px; color:#0A2342; }
+  .bank { background:#f4f6f9; padding:12px 14px; border-radius:10px; font-size:13px; line-height:1.6; margin:12px 0; }
+  .bank b { color:#0A2342; }
+  .uploader { border:2px dashed #ccc; border-radius:10px; padding:18px; text-align:center; color:#666; font-size:13px; margin:12px 0; }
+  .btn { display:block; text-align:center; padding:10px 14px; border-radius:8px; text-decoration:none; font-weight:600; margin:8px 0; }
+  .btn-wa { background:#25D366; color:#fff; }
+  .btn-ghost { background:#f4f6f9; color:#0A2342; }
+  .btn-primary { background:#0A2342; color:#fff; }
+  .footer { display:flex; gap:8px; margin-top:12px; }
+  .footer a { flex:1; }
+  .note { font-size:12px; color:#888; margin-top:10px; }
+</style>
+</head>
+<body>
+<div class="overlay">
+  <div class="modal">
+    <h1 class="title">Reserva registrada</h1>
+    <p class="sub">Guarda tu comprobante para dejar el pago en revisión.</p>
+    <div class="callout">✅ <strong>Reserva registrada.</strong> Tu horario queda reservado mientras validamos el pago.</div>
+    <div class="total">
+      <div><span>Sesión Recovery</span><br><small style="color:#888;">REF-1234</small></div>
+      <strong>$35.000</strong>
+    </div>
+    <div class="bank">
+      <b>Datos bancarios</b><br>
+      Titular: DANIEL ESTEBAN BARRUETO<br>
+      RUT: 17.375.282-2<br>
+      Banco: BCI · Cuenta Corriente<br>
+      Cuenta: 72771619<br>
+      Email: recoverystudio7@gmail.com
+    </div>
+    <div class="uploader">📎 Adjuntar comprobante de transferencia<br><small>JPG o PNG · puedes hacerlo ahora o después</small></div>
+    <a class="btn btn-wa" href="#">💬 Enviar comprobante por WhatsApp</a>
+    <p class="note">Tu pago quedará <strong>en revisión</strong>. Al aprobarlo, tu reserva quedará confirmada y recibirás una notificación.</p>
+    <div class="footer">
+      <a class="btn btn-ghost" href="#">Ver mis pagos</a>
+      <a class="btn btn-primary" href="#">Ir a mis reservas →</a>
+    </div>
+  </div>
+</div>
+</body>
+</html>

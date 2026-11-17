@@ -1,0 +1,26 @@
+# Material de referencia (repos externos clonados para consulta)
+referencia/
+
+# Dependencias y builds (por si el proyecto evoluciona)
+node_modules/
+dist/
+build/
+.next/
+out/
+
+# Entornos y secretos
+.env
+.env.*
+*.local
+
+# Sistema / editores
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*

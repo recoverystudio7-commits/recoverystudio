@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Slots de 30 minutos — ejemplo</title>
+<style>
+  body { font-family:Inter,system-ui,sans-serif; margin:0; background:#eef1f6; color:#1a1a1a; }
+  .wrap { max-width:720px; margin:40px auto; padding:20px; }
+  .card { background:#fff; border-radius:16px; padding:24px; box-shadow:0 6px 20px rgba(0,0,0,.06); }
+  h1 { color:#0A2342; margin:0 0 6px; }
+  p { color:#555; font-size:14px; }
+  .legend { display:flex; gap:12px; margin:12px 0; font-size:12px; }
+  .legend span { display:flex; align-items:center; gap:6px; }
+  .dot { width:12px; height:12px; border-radius:3px; }
+  .free { background:#e8f5e9; border:1px solid #2e7d32; }
+  .busy { background:#fce4ec; border:1px solid #c62828; }
+  .blocked { background:#eeeeee; border:1px solid #9e9e9e; }
+  .grid { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-top:14px; }
+  .slot { padding:10px 6px; border-radius:8px; text-align:center; font-size:13px; font-weight:600; }
+  .slot.free { background:#e8f5e9; color:#1b5e20; border:1px solid #2e7d32; }
+  .slot.busy { background:#fce4ec; color:#880e4f; border:1px solid #c62828; text-decoration:line-through; }
+  .slot.blocked { background:#eeeeee; color:#616161; border:1px solid #9e9e9e; }
+  .day { margin-top:18px; }
+  .day h3 { margin:0 0 8px; color:#0A2342; font-size:15px; }
+  .note { font-size:12px; color:#888; margin-top:12px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <h1>Agenda con slots de 30 minutos</h1>
+    <p>Ejemplo de disponibilidad para un día (Lunes 17:30–20:00). Con slots de 30 min se ofrecen más opciones y se llena mejor la agenda.</p>
+    <div class="legend">
+      <span><span class="dot free"></span>Disponible</span>
+      <span><span class="dot busy"></span>Ocupado</span>
+      <span><span class="dot blocked"></span>Bloqueado</span>
+    </div>
+
+    <div class="day">
+      <h3>Lunes · Sesión Recovery (60 min → 2 slots)</h3>
+      <div class="grid">
+        <div class="slot free">17:30</div>
+        <div class="slot busy">18:00</div>
+        <div class="slot free">18:30</div>
+        <div class="slot free">19:00</div>
+        <div class="slot busy">19:30</div>
+        <div class="slot free">20:00</div>
+        <div class="slot blocked">20:30</div>
+        <div class="slot blocked">21:00</div>
+      </div>
+    </div>
+
+    <div class="day">
+      <h3>Lunes · Asesoría online (30 min → 1 slot)</h3>
+      <div class="grid">
+        <div class="slot free">17:30</div>
+        <div class="slot free">18:00</div>
+        <div class="slot free">18:30</div>
+        <div class="slot free">19:00</div>
+        <div class="slot free">19:30</div>
+        <div class="slot free">20:00</div>
+        <div class="slot free">20:30</div>
+        <div class="slot free">21:00</div>
+      </div>
+    </div>
+
+    <p class="note">Nota: para implementarlo, cambia <code>settings.slot</code> de 60 a 30 en <code>data.js</code> (y en Supabase). Las sesiones de 60 min ocuparán 2 slots consecutivos automáticamente.</p>
+  </div>
+</div>
+</body>
+</html>

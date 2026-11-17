@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="es-CL">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Propuesta 1 · Ficha clínica — Recovery Studio</title>
+<meta name="description" content="Propuesta de rediseño editorial para Recovery Studio: kinesiología, masoterapia y sauna con atención 1:1 en Gorbea.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F5F0E6;
+    --paper-2:#EDE5D6;
+    --ink:#141A1C;
+    --ink-soft:#464C4A;
+    --muted:#5E6157;
+    --accent:#C24427;
+    --accent-deep:#98331A;
+    --line:rgba(20,26,28,.14);
+    --line-strong:rgba(20,26,28,.32);
+    --serif:"Fraunces",Georgia,serif;
+    --sans:"Inter",system-ui,-apple-system,sans-serif;
+    --mono:"IBM Plex Mono",ui-monospace,monospace;
+    --wrap:1180px;
+    --pad:clamp(20px,4vw,56px);
+  }
+  *,*::before,*::after{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:var(--sans);
+    font-size:16px;
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+  }
+  body::before{
+    content:"";
+    position:fixed;inset:0;z-index:9999;pointer-events:none;opacity:.035;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  a{color:inherit}
+  img,svg{display:block;max-width:100%}
+  ::selection{background:var(--accent);color:#fff}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+  .skip{
+    position:absolute;left:-9999px;top:0;background:var(--ink);color:var(--paper);
+    padding:12px 18px;z-index:10000;font-size:14px;
+  }
+  .skip:focus{left:12px;top:12px}
+  .wrap{width:min(var(--wrap),100% - var(--pad)*2);margin-inline:auto}
+  .mono{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;font-weight:500}
+  .rule{height:1px;background:var(--line);border:0;margin:0}
+
+  /* ---------- header ---------- */
+  .topbar{
+    position:sticky;top:0;z-index:100;
+    background:color-mix(in srgb,var(--paper) 92%,transparent);
+    backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line);
+  }
+  .topbar-inner{
+    display:flex;align-items:center;gap:28px;min-height:72px;
+  }
+  .brand{display:flex;align-items:center;gap:12px;text-decoration:none;flex:0 0 auto}
+  .brand-mark{
+    width:38px;height:38px;border:1.5px solid var(--ink);
+    display:grid;place-items:center;font-family:var(--serif);
+    font-size:21px;line-height:1;padding-bottom:2px;
+  }
+  .brand-name{display:flex;flex-direction:column;line-height:1.1}
+  .brand-name b{font-family:var(--serif);font-weight:500;font-size:17px;letter-spacing:-.01em}
+  .brand-name span{font-family:var(--mono);font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-top:3px}
+  .nav{
+    display:flex;align-items:center;gap:26px;margin-left:auto;
+    overflow-x:auto;scrollbar-width:none;
+  }
+  .nav::-webkit-scrollbar{display:none}
+  .nav a{
+    font-size:13px;text-decoration:none;color:var(--ink-soft);white-space:nowrap;
+    padding:6px 0;border-bottom:1px solid transparent;transition:color .2s,border-color .2s;
+  }
+  .nav a:hover,.nav a:focus-visible{color:var(--ink);border-bottom-color:var(--accent)}
+  .nav a[aria-current]{color:var(--ink);border-bottom-color:var(--ink)}
+  .btn{
+    display:inline-flex;align-items:center;gap:10px;justify-content:center;
+    font-family:var(--sans);font-size:13px;font-weight:500;letter-spacing:.01em;
+    text-decoration:none;padding:12px 20px;border:1px solid var(--ink);
+    border-radius:2px;background:transparent;color:var(--ink);
+    transition:background .2s,color .2s,border-color .2s;cursor:pointer;
+  }
+  .btn:hover,.btn:focus-visible{background:var(--ink);color:var(--paper)}
+  .btn-solid{background:var(--ink);color:var(--paper)}
+  .btn-solid:hover,.btn-solid:focus-visible{background:var(--accent);border-color:var(--accent);color:#fff}
+  .btn-accent{background:var(--accent);border-color:var(--accent);color:#fff}
+  .btn-accent:hover,.btn-accent:focus-visible{background:var(--accent-deep);border-color:var(--accent-deep);color:#fff}
+  .btn-sm{padding:9px 15px;font-size:12px}
+  .header-cta{flex:0 0 auto;display:flex;gap:10px}
+
+  /* ---------- hero ---------- */
+  .hero{padding:clamp(44px,7vw,92px) 0 clamp(36px,5vw,64px)}
+  .hero-grid{display:grid;grid-template-columns:minmax(0,1.18fr) minmax(0,.82fr);gap:clamp(36px,6vw,84px);align-items:start}
+  .eyebrow{display:flex;align-items:center;gap:12px;color:var(--accent-deep);margin-bottom:26px}
+  .eyebrow::before{content:"";width:34px;height:1px;background:var(--accent-deep)}
+  .hero h1{
+    font-family:var(--serif);font-weight:300;font-size:clamp(2.9rem,7.2vw,5.9rem);
+    line-height:.96;letter-spacing:-.035em;margin:0 0 26px;max-width:13ch;
+  }
+  .hero h1 em{font-style:italic;font-weight:400;color:var(--accent)}
+  .hero-lead{font-size:clamp(15px,1.25vw,18px);color:var(--ink-soft);max-width:44ch;margin:0 0 32px;line-height:1.65}
+  .hero-actions{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:34px}
+  .hero-points{display:flex;flex-wrap:wrap;gap:8px 22px;padding:0;margin:0;list-style:none;color:var(--muted);font-size:12.5px}
+  .hero-points li{display:flex;align-items:center;gap:7px}
+  .hero-points li::before{content:"";width:5px;height:5px;background:var(--accent);border-radius:50%;flex:0 0 auto}
+
+  /* ficha */
+  .ficha{
+    border:1px solid var(--line-strong);background:var(--paper-2);
+    padding:0;position:relative;
+  }
+  .ficha::after{
+    content:"";position:absolute;inset:6px;border:1px solid var(--line);
+    pointer-events:none;
+  }
+  .ficha-head{
+    display:flex;justify-content:space-between;align-items:flex-start;gap:12px;
+    padding:22px 24px 18px;border-bottom:1px solid var(--line-strong);
+  }
+  .ficha-head h2{font-family:var(--serif);font-weight:500;font-size:20px;margin:0;letter-spacing:-.01em}
+  .ficha-head p{margin:5px 0 0;font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  .ficha-badge{
+    font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;
+    border:1px solid var(--line-strong);padding:5px 8px;color:var(--accent-deep);
+    white-space:nowrap;
+  }
+  .ficha-rows{list-style:none;margin:0;padding:4px 24px}
+  .ficha-rows li{
+    display:grid;grid-template-columns:1fr auto;gap:4px 16px;align-items:baseline;
+    padding:14px 0;border-bottom:1px solid var(--line);
+  }
+  .ficha-rows li:last-child{border-bottom:0}
+  .ficha-rows .name{font-size:14px;font-weight:500}
+  .ficha-rows .meta{grid-column:1;font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+  .ficha-rows .price{grid-column:2;grid-row:1 / span 2;font-family:var(--mono);font-size:14px;font-weight:500;align-self:center}
+  .ficha-foot{padding:18px 24px 24px;border-top:1px solid var(--line-strong)}
+  .ficha-foot p{margin:0 0 14px;font-size:11.5px;color:var(--muted);line-height:1.5}
+  .ficha-foot .btn{width:100%}
+
+  /* ticker */
+  .ticker{border-block:1px solid var(--line);overflow:hidden;background:var(--paper-2)}
+  .ticker-track{display:flex;gap:0;width:max-content;animation:slide 42s linear infinite}
+  .ticker span{
+    font-family:var(--mono);font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--ink-soft);padding:11px 0;white-space:nowrap;
+  }
+  .ticker span::after{content:"◆";color:var(--accent);margin:0 26px;font-size:8px;vertical-align:middle}
+  @keyframes slide{to{transform:translateX(-50%)}}
+
+  /* sections */
+  .section{padding:clamp(56px,8vw,104px) 0;border-bottom:1px solid var(--line)}
+  .section:last-of-type{border-bottom:0}
+  .section-head{display:grid;grid-template-columns:190px minmax(0,1fr);gap:24px;margin-bottom:clamp(34px,5vw,56px)}
+  .section-label{color:var(--muted);display:flex;flex-direction:column;gap:8px;padding-top:6px}
+  .section-label b{color:var(--accent-deep);font-weight:500}
+  .section-title{font-family:var(--serif);font-weight:300;font-size:clamp(1.9rem,3.6vw,3.2rem);line-height:1.04;letter-spacing:-.03em;margin:0;max-width:20ch}
+  .section-title em{font-style:italic;color:var(--accent)}
+  .section-sub{margin:16px 0 0;max-width:56ch;color:var(--ink-soft);font-size:15px}
+
+  /* services */
+  .services{list-style:none;margin:0;padding:0;border-top:1px solid var(--line-strong)}
+  .service{
+    display:grid;grid-template-columns:72px minmax(0,1fr) 190px;gap:clamp(14px,3vw,40px);
+    align-items:start;padding:clamp(22px,3.4vw,34px) 0;border-bottom:1px solid var(--line);
+    text-decoration:none;position:relative;transition:background .2s;
+  }
+  .service::before{content:"";position:absolute;left:-12px;right:-12px;top:0;bottom:0;background:var(--paper-2);opacity:0;transition:opacity .2s;z-index:0}
+  .service:hover::before,.service:focus-visible::before{opacity:1}
+  .service > *{position:relative;z-index:1}
+  .service-num{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.12em;padding-top:8px}
+  .service h3{font-family:var(--serif);font-weight:400;font-size:clamp(1.35rem,2.2vw,1.85rem);line-height:1.15;letter-spacing:-.02em;margin:0 0 8px}
+  .service p{margin:0;color:var(--ink-soft);font-size:14px;max-width:52ch;line-height:1.6}
+  .service-meta{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);text-align:right;padding-top:9px;line-height:1.8}
+  .service-meta b{display:block;color:var(--accent-deep);font-weight:500}
+
+  /* method */
+  .method{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-top:1px solid var(--line-strong)}
+  .method-step{padding:clamp(24px,3.4vw,38px) clamp(18px,2.6vw,32px);border-right:1px solid var(--line)}
+  .method-step:last-child{border-right:0}
+  .method-step .n{font-family:var(--serif);font-size:clamp(2.4rem,4vw,3.4rem);font-weight:300;color:var(--accent);line-height:1;letter-spacing:-.04em;display:block;margin-bottom:18px}
+  .method-step h3{font-family:var(--serif);font-weight:500;font-size:19px;margin:0 0 10px;letter-spacing:-.01em}
+  .method-step p{margin:0;font-size:13.5px;color:var(--ink-soft);line-height:1.65}
+
+  /* pricing */
+  .pricing{display:grid;grid-template-columns:1fr 1fr;gap:clamp(28px,5vw,64px);align-items:start}
+  .price-block h3{font-family:var(--mono);font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent-deep);margin:0 0 18px;padding-bottom:12px;border-bottom:1px solid var(--line-strong)}
+  .price-table{width:100%;border-collapse:collapse}
+  .price-table th{
+    text-align:left;font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--muted);font-weight:400;padding:0 0 10px;border-bottom:1px solid var(--line);
+  }
+  .price-table th:last-child,.price-table td:last-child{text-align:right}
+  .price-table td{padding:15px 0;border-bottom:1px solid var(--line);vertical-align:top;font-size:14px}
+  .price-table td:first-child b{font-weight:500;display:block}
+  .price-table td:first-child small{display:block;color:var(--muted);font-size:11.5px;margin-top:3px;line-height:1.45}
+  .price-table td.amount{font-family:var(--mono);font-size:13.5px;white-space:nowrap;padding-left:16px}
+  .price-table td.amount small{display:block;font-size:9.5px;color:var(--muted);margin-top:3px;letter-spacing:.06em}
+  .note{
+    display:flex;gap:10px;margin:28px 0 0;padding:16px 18px;background:var(--paper-2);
+    border-left:2px solid var(--accent);font-size:12.5px;color:var(--ink-soft);line-height:1.6;
+  }
+  .note b{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent-deep);flex:0 0 auto;padding-top:2px}
+
+  /* location */
+  .location{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:clamp(32px,6vw,80px);align-items:stretch}
+  .loc-list{list-style:none;margin:0;padding:0;border-top:1px solid var(--line-strong)}
+  .loc-list li{display:grid;grid-template-columns:150px minmax(0,1fr);gap:18px;padding:16px 0;border-bottom:1px solid var(--line);font-size:14px}
+  .loc-list .k{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);padding-top:3px}
+  .loc-list a{text-decoration:none;border-bottom:1px solid var(--line-strong);transition:border-color .2s,color .2s}
+  .loc-list a:hover,.loc-list a:focus-visible{color:var(--accent-deep);border-color:var(--accent)}
+  .map{
+    position:relative;border:1px solid var(--line-strong);background:var(--paper-2);
+    min-height:300px;overflow:hidden;display:grid;place-items:center;
+  }
+  .map::before{
+    content:"";position:absolute;inset:0;
+    background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+    background-size:38px 38px;
+  }
+  .map::after{
+    content:"";position:absolute;width:120%;height:1px;background:var(--line-strong);
+    top:58%;left:-10%;transform:rotate(-14deg);
+  }
+  .map-pin{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:10px}
+  .map-dot{width:14px;height:14px;background:var(--accent);border-radius:50%;box-shadow:0 0 0 6px rgba(194,68,39,.16),0 0 0 14px rgba(194,68,39,.07)}
+  .map-pin span{font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-soft);background:var(--paper);padding:5px 9px;border:1px solid var(--line-strong)}
+  .map-corner{position:absolute;font-family:var(--mono);font-size:9px;letter-spacing:.14em;color:var(--muted);padding:10px 12px}
+  .map-corner.tl{top:0;left:0}.map-corner.br{bottom:0;right:0}
+
+  /* cta */
+  .cta-band{background:var(--ink);color:var(--paper);padding:clamp(48px,7vw,84px) 0}
+  .cta-inner{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:32px}
+  .cta-band h2{font-family:var(--serif);font-weight:300;font-size:clamp(2rem,4.4vw,3.8rem);line-height:1;letter-spacing:-.03em;margin:0;max-width:16ch}
+  .cta-band h2 em{font-style:italic;color:#E9A48F}
+  .cta-band p{margin:16px 0 0;color:rgba(245,240,230,.68);font-size:14px;max-width:42ch}
+  .cta-actions{display:flex;flex-wrap:wrap;gap:12px}
+  .cta-band .btn{border-color:rgba(245,240,230,.4);color:var(--paper)}
+  .cta-band .btn:hover,.cta-band .btn:focus-visible{background:var(--paper);color:var(--ink);border-color:var(--paper)}
+  .cta-band .btn-accent{border-color:var(--accent);color:#fff}
+  .cta-band .btn-accent:hover,.cta-band .btn-accent:focus-visible{background:#fff;color:var(--ink);border-color:#fff}
+
+  /* footer */
+  .footer{padding:36px 0 44px;background:var(--paper)}
+  .footer-top{display:flex;flex-wrap:wrap;justify-content:space-between;gap:24px;align-items:flex-start;padding-bottom:26px;border-bottom:1px solid var(--line)}
+  .footer-brand{display:flex;align-items:center;gap:14px}
+  .footer-brand b{font-family:var(--serif);font-weight:500;font-size:22px;letter-spacing:-.02em;display:block}
+  .footer-brand small{font-family:var(--mono);font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
+  .footer-links{display:flex;flex-wrap:wrap;gap:8px 22px;font-size:12.5px}
+  .footer-links a{text-decoration:none;color:var(--ink-soft);border-bottom:1px solid transparent}
+  .footer-links a:hover,.footer-links a:focus-visible{color:var(--ink);border-color:var(--accent)}
+  .footer-bottom{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;padding-top:20px;color:var(--muted);font-size:11px}
+  .footer-bottom .mono{font-size:9px;letter-spacing:.12em}
+
+  @media (max-width:980px){
+    .hero-grid{grid-template-columns:1fr}
+    .ficha{max-width:520px}
+    .section-head{grid-template-columns:1fr;gap:12px}
+    .section-label{flex-direction:row;gap:12px;align-items:center}
+    .service{grid-template-columns:48px minmax(0,1fr)}
+    .service-meta{grid-column:2;text-align:left;padding-top:0;display:flex;gap:16px}
+    .service-meta b{display:inline}
+    .method{grid-template-columns:1fr}
+    .method-step{border-right:0;border-bottom:1px solid var(--line)}
+    .method-step:last-child{border-bottom:0}
+    .pricing{grid-template-columns:1fr}
+    .location{grid-template-columns:1fr}
+    .map{min-height:220px}
+  }
+  @media (max-width:720px){
+    .nav{display:none}
+    .header-cta{margin-left:auto}
+    .header-cta .btn:not(.btn-solid){display:none}
+    .hero{padding-top:36px}
+    .hero h1{max-width:11ch}
+    .loc-list li{grid-template-columns:1fr;gap:4px}
+    .loc-list .k{padding-top:0}
+  }
+  @media (max-width:420px){
+    .brand-name span{display:none}
+    .ficha-head{flex-direction:column}
+    .ficha-rows{padding-inline:18px}
+    .ficha-head,.ficha-foot{padding-inline:18px}
+    .hero-actions .btn{width:100%}
+    .cta-actions .btn{width:100%}
+  }
+  @media (prefers-reduced-motion:reduce){
+    html{scroll-behavior:auto}
+    .ticker-track{animation:none}
+    *{transition:none!important}
+  }
+</style>
+</head>
+<body>
+<a class="skip" href="#contenido">Ir al contenido</a>
+
+<header class="topbar">
+  <div class="wrap topbar-inner">
+    <a class="brand" href="#inicio" aria-label="Recovery Studio, inicio">
+      <span class="brand-mark" aria-hidden="true">R</span>
+      <span class="brand-name"><b>Recovery Studio</b><span>Kinesiología y movimiento</span></span>
+    </a>
+    <nav class="nav" aria-label="Servicios">
+      <a href="#servicios">Kinesiología</a>
+      <a href="#servicios">Masajes</a>
+      <a href="#servicios">Sauna</a>
+      <a href="#servicios">Asesorías</a>
+      <a href="#valores">Precios</a>
+    </nav>
+    <div class="header-cta">
+      <a class="btn btn-sm" href="https://wa.me/56965058439?text=Hola%20Recovery%20Studio%2C%20quiero%20consultar." target="_blank" rel="noopener">WhatsApp</a>
+      <a class="btn btn-solid btn-sm" href="#agendar">Agendar</a>
+    </div>
+  </div>
+</header>
+
+<main id="contenido">
+  <section class="hero" id="inicio">
+    <div class="wrap hero-grid">
+      <div>
+        <p class="eyebrow mono">Recovery Studio · Gorbea, Araucanía</p>
+        <h1>Recuperar<br>también es<br><em>entrenar.</em></h1>
+        <p class="hero-lead">Kinesiología, masoterapia y sauna con atención 1:1. Para volver a moverte sin miedo, sostener la carga de la semana y llegar mejor al día siguiente.</p>
+        <div class="hero-actions">
+          <a class="btn btn-accent" href="#agendar">Agendar sesión <span aria-hidden="true">→</span></a>
+          <a class="btn" href="https://wa.me/56965058439?text=Hola%20Recovery%20Studio%2C%20quiero%20agendar%20una%20sesi%C3%B3n." target="_blank" rel="noopener">Preguntar por WhatsApp</a>
+        </div>
+        <ul class="hero-points">
+          <li>Atención 1:1, sin grupos</li>
+          <li>Evaluación de 75 min</li>
+          <li>Boleta de honorarios</li>
+          <li>Transferencia o MercadoPago</li>
+        </ul>
+      </div>
+
+      <aside class="ficha" aria-label="Resumen de valores referenciales">
+        <div class="ficha-head">
+          <div>
+            <h2>Ficha de sesión</h2>
+            <p>Valores en CLP · referencia</p>
+          </div>
+          <span class="ficha-badge">Agenda abierta</span>
+        </div>
+        <ul class="ficha-rows">
+          <li><span class="name">Evaluación + pauta</span><span class="meta">75 min</span><span class="price">$40.000</span></li>
+          <li><span class="name">Sesión Recovery</span><span class="meta">60 min</span><span class="price">$35.000</span></li>
+          <li><span class="name">Entrenamiento 1:1</span><span class="meta">60 min</span><span class="price">$30.000</span></li>
+          <li><span class="name">Asesoría online</span><span class="meta">30 min</span><span class="price">$18.000</span></li>
+        </ul>
+        <div class="ficha-foot">
+          <p>Planes desde $25.000 por sesión. Confirma disponibilidad y condiciones al agendar.</p>
+          <a class="btn btn-solid" href="#agendar">Reservar mi hora <span aria-hidden="true">→</span></a>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <div class="ticker" aria-hidden="true">
+    <div class="ticker-track">
+      <span>Atención 1:1</span><span>Evaluación funcional 75 min</span><span>Masoterapia deportiva</span><span>Sauna con protocolo</span><span>Planes de 8 y 12 sesiones</span><span>Boleta de honorarios</span><span>Lun–Sáb 08:00–20:00</span>
+      <span>Atención 1:1</span><span>Evaluación funcional 75 min</span><span>Masoterapia deportiva</span><span>Sauna con protocolo</span><span>Planes de 8 y 12 sesiones</span><span>Boleta de honorarios</span><span>Lun–Sáb 08:00–20:00</span>
+    </div>
+  </div>
+
+  <section class="section" id="servicios">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="section-label mono"><b>01</b> Servicios</p>
+        <div>
+          <h2 class="section-title">Cuatro formas de <em>volver a moverte.</em></h2>
+          <p class="section-sub">Todo se trabaja en sesiones individuales. Elegimos juntos el punto de entrada según tu historia, tu carga de entrenamiento y lo que necesitas resolver ahora.</p>
+        </div>
+      </div>
+      <ul class="services">
+        <li>
+          <a class="service" href="#agendar">
+            <span class="service-num">01</span>
+            <span>
+              <h3>Kinesiología y rehabilitación</h3>
+              <p>Evaluación funcional de 75 minutos, trabajo manual y ejercicio terapéutico para volver a entrenar con criterio y sin miedo.</p>
+            </span>
+            <span class="service-meta"><b>Desde $40.000</b>75 min · 1:1</span>
+          </a>
+        </li>
+        <li>
+          <a class="service" href="#agendar">
+            <span class="service-num">02</span>
+            <span>
+              <h3>Masoterapia deportiva</h3>
+              <p>Descarga muscular y movilidad asistida para cerrar la semana de carga sin acumular tensión. Incluye recomendaciones post sesión.</p>
+            </span>
+            <span class="service-meta"><b>$35.000</b>60 min · 1:1</span>
+          </a>
+        </li>
+        <li>
+          <a class="service" href="#agendar">
+            <span class="service-num">03</span>
+            <span>
+              <h3>Sauna húmedo</h3>
+              <p>Calor con protocolo, hidratación y tiempos controlados. Ideal después de un masaje o al final de un día de carga.</p>
+            </span>
+            <span class="service-meta"><b>Consultar</b>20–30 min</span>
+          </a>
+        </li>
+        <li>
+          <a class="service" href="#agendar">
+            <span class="service-num">04</span>
+            <span>
+              <h3>Entrenamiento 1:1 y asesorías</h3>
+              <p>En sala o por videollamada. Corrección técnica, registro de cargas y un plan que puedas sostener en el tiempo.</p>
+            </span>
+            <span class="service-meta"><b>Desde $18.000</b>60 / 30 min</span>
+          </a>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="section" id="metodo">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="section-label mono"><b>02</b> Método</p>
+        <div>
+          <h2 class="section-title">Evaluar, tratar, <em>sostener.</em></h2>
+          <p class="section-sub">No hay pautas genéricas. El proceso parte por entender qué necesitas y termina cuando puedes seguir solo.</p>
+        </div>
+      </div>
+      <div class="method">
+        <article class="method-step">
+          <span class="n">01</span>
+          <h3>Evaluar</h3>
+          <p>Medimos, preguntamos y definimos el objetivo real. Revisamos antecedentes, movilidad y tolerancia a la carga antes de decidir el plan.</p>
+        </article>
+        <article class="method-step">
+          <span class="n">02</span>
+          <h3>Tratar</h3>
+          <p>Sesión 1:1 con trabajo manual, ejercicio y educación. Queremos que entiendas lo que pasa en tu cuerpo y por qué hacemos cada cosa.</p>
+        </article>
+        <article class="method-step">
+          <span class="n">03</span>
+          <h3>Sostener</h3>
+          <p>Planes de 8 o 12 sesiones, controles y ajustes. La idea es que la mejora no dependa de venir para siempre, sino de saber administrarla.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="valores">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="section-label mono"><b>03</b> Valores</p>
+        <div>
+          <h2 class="section-title">Precios claros, <em>sin letra chica.</em></h2>
+          <p class="section-sub">Sesiones individuales y planes para sostener el proceso. Pago por transferencia o link de MercadoPago. Emitimos boleta de honorarios.</p>
+        </div>
+      </div>
+      <div class="pricing">
+        <div class="price-block">
+          <h3>Sesiones individuales</h3>
+          <table class="price-table">
+            <thead><tr><th scope="col">Servicio</th><th scope="col">Valor</th></tr></thead>
+            <tbody>
+              <tr><td><b>Evaluación + pauta</b><small>Evaluación funcional, objetivos y pauta inicial.</small></td><td class="amount">$40.000<small>75 min</small></td></tr>
+              <tr><td><b>Sesión Recovery</b><small>Masoterapia, movilidad asistida y descarga.</small></td><td class="amount">$35.000<small>60 min</small></td></tr>
+              <tr><td><b>Entrenamiento 1:1</b><small>Corrección técnica y registro de cargas.</small></td><td class="amount">$30.000<small>60 min</small></td></tr>
+              <tr><td><b>Asesoría online</b><small>Revisión de rutina, cargas y recuperación.</small></td><td class="amount">$18.000<small>30 min</small></td></tr>
+              <tr><td><b>Sauna húmedo</b><small>Protocolo de hidratación y tiempos controlados.</small></td><td class="amount">Consultar<small>20–30 min</small></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="price-block">
+          <h3>Planes y programas</h3>
+          <table class="price-table">
+            <thead><tr><th scope="col">Plan</th><th scope="col">Valor</th></tr></thead>
+            <tbody>
+              <tr><td><b>Plan Recovery 8</b><small>8 sesiones de recuperación para usar durante el mes.</small></td><td class="amount">$220.000<small>$27.500 / sesión</small></td></tr>
+              <tr><td><b>Plan Performance 12</b><small>12 sesiones combinadas, rutina y control de maximales.</small></td><td class="amount">$300.000<small>$25.000 / sesión</small></td></tr>
+              <tr><td><b>Programa Empresa</b><small>Bienestar y prevención para equipos de trabajo.</small></td><td class="amount">Cotización<small>a medida</small></td></tr>
+            </tbody>
+          </table>
+          <p class="note"><b>Nota</b><span>Los planes tienen vigencia y condiciones de uso que se informan antes de la compra. Se activan al confirmar el pago.</span></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="donde">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="section-label mono"><b>04</b> Dónde</p>
+        <div>
+          <h2 class="section-title">Un espacio tranquilo, <em>sin apuro.</em></h2>
+          <p class="section-sub">Atendemos con hora agendada para que la sesión tenga el tiempo que necesita. Escríbenos si necesitas coordinar un horario especial.</p>
+        </div>
+      </div>
+      <div class="location">
+        <ul class="loc-list">
+          <li><span class="k">Dirección</span><span>Pasaje uno, Gorbea<br>Región de la Araucanía, Chile</span></li>
+          <li><span class="k">Horario</span><span>Lunes a sábado · 08:00–20:00</span></li>
+          <li><span class="k">WhatsApp</span><span><a href="https://wa.me/56965058439" target="_blank" rel="noopener">+56 9 6505 8439</a></span></li>
+          <li><span class="k">Email</span><span><a href="mailto:recoverystudio7@gmail.com">recoverystudio7@gmail.com</a></span></li>
+          <li><span class="k">Pago</span><span>Transferencia bancaria o link de MercadoPago</span></li>
+          <li><span class="k">Documentos</span><span>Boleta de honorarios para reembolso</span></li>
+        </ul>
+        <div class="map" aria-hidden="true">
+          <span class="map-corner tl">GORBEA · ARAUCANÍA</span>
+          <span class="map-corner br">PASAJE UNO</span>
+          <span class="map-pin"><span class="map-dot"></span><span>Recovery Studio</span></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="cta-band" id="agendar">
+    <div class="wrap cta-inner">
+      <div>
+        <h2>La próxima sesión<br>empieza con <em>un mensaje.</em></h2>
+        <p>Cuéntanos qué necesitas y te ayudamos a elegir la primera atención. Respondemos dentro del horario de atención.</p>
+      </div>
+      <div class="cta-actions">
+        <a class="btn btn-accent" href="https://wa.me/56965058439?text=Hola%20Recovery%20Studio%2C%20quiero%20agendar%20una%20primera%20sesi%C3%B3n." target="_blank" rel="noopener">Escribir por WhatsApp <span aria-hidden="true">→</span></a>
+        <a class="btn" href="mailto:recoverystudio7@gmail.com">Enviar un correo</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="wrap">
+    <div class="footer-top">
+      <div class="footer-brand">
+        <span class="brand-mark" aria-hidden="true">R</span>
+        <span><b>Recovery Studio</b><small>Kinesiología y movimiento · Gorbea</small></span>
+      </div>
+      <nav class="footer-links" aria-label="Enlaces del sitio">
+        <a href="#servicios">Kinesiología</a>
+        <a href="#servicios">Masajes</a>
+        <a href="#servicios">Sauna</a>
+        <a href="#servicios">Asesorías</a>
+        <a href="#valores">Precios</a>
+        <a href="https://wa.me/56965058439" target="_blank" rel="noopener">WhatsApp</a>
+      </nav>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 Recovery Studio. Valores referenciales en pesos chilenos.</span>
+      <span class="mono">Propuesta 01 · Ficha clínica</span>
+    </div>
+  </div>
+</footer>
+</body>
+</html>
