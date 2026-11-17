@@ -4,7 +4,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { remoteEnabled, readRemoteDb, writeRemoteDb, acquireLock } from './lib/store.js';
-import { channelStatus, deliver } from './lib/notify.js';
+import { channelStatus, deliver, deliverTo, clientEmailStatus } from './lib/notify.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = path.join(__dirname, 'public');
@@ -373,6 +373,12 @@ function parseCookies(req) {
   return out;
 }
 
+/** IP real del cliente detrás del proxy de Vercel (x-forwarded-for). */
+function clientIp(req) {
+  const forwarded = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim();
+  return forwarded || String(req.headers['x-real-ip'] || '').trim() || req.socket?.remoteAddress || 'ip';
+}
+
 function currentUser(req) {
   const token = parseCookies(req)[COOKIE];
   const payload = verifyToken(token);
@@ -385,7 +391,7 @@ function currentUser(req) {
 
 function sessionCookie(user) {
   const token = signToken({ uid: user.id, tv: user.tokenVersion || 0, purpose: 'session' }, SESSION_MS);
-  return `${COOKIE}=${token}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${SESSION_MS / 1000}${IS_PROD ? '; Secure' : ''}`;
+  return `${COOKIE}=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${SESSION_MS / 1000}${IS_PROD ? '; Secure' : ''}`;
 }
 
 function publicUser(user) {
@@ -781,6 +787,67 @@ function humanDate(date) {
     .format(new Date(y, m - 1, d));
 }
 
+function addDaysLocal(dateStr, days = 1) {
+  const date = parseLocal(dateStr);
+  date.setDate(date.getDate() + days);
+  return localDateStr(date);
+}
+
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, (c) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  }[c]));
+}
+
+function emailHtml(title, paragraphs = []) {
+  const body = paragraphs
+    .map((p) => `<p style="margin:0 0 12px;line-height:1.65">${escapeHtml(p).replace(/\n/g, '<br>')}</p>`)
+    .join('');
+  return `<!doctype html>
+<html lang="es">
+  <body style="margin:0;padding:24px;background:#f4f7fa;font-family:Segoe UI,system-ui,Arial,sans-serif;color:#21384f">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden">
+      <tr><td style="background:#0a2540;padding:22px 26px;color:#fff">
+        <div style="font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#b9d4ea">Recovery Studio</div>
+        <div style="font-size:20px;font-weight:700;margin-top:6px">${escapeHtml(title)}</div>
+      </td></tr>
+      <tr><td style="padding:24px 26px;font-size:14px">${body}
+        <p style="margin:22px 0 0"><a href="https://www.recoverystudio.cl/#/app" style="display:inline-block;background:#1268b5;color:#fff;text-decoration:none;padding:11px 18px;border-radius:10px;font-weight:600">Ver mi panel</a></p>
+      </td></tr>
+      <tr><td style="padding:16px 26px;border-top:1px solid #e2e9f1;font-size:11px;color:#5b6f84">
+        Recovery Studio · Kinesiología y movimiento · <a href="https://www.recoverystudio.cl" style="color:#1268b5">recoverystudio.cl</a>
+      </td></tr>
+    </table>
+  </body>
+</html>`;
+}
+
+/**
+ * Correo transaccional al cliente. Requiere un remitente de dominio verificado
+ * (RESEND_CLIENT_FROM). Nunca lanza y no bloquea la operación si falla.
+ */
+async function notifyClient(user, subject, paragraphs, options = {}) {
+  const to = String(user?.email || '').trim();
+  if (!to) return { status: 'off', reason: 'El cliente no tiene correo.' };
+  const status = clientEmailStatus();
+  if (!status.configured) return { status: 'off', reason: status.hint };
+  const title = subject;
+  return deliverTo({
+    to,
+    subject: `${db.settings.studioName} · ${subject}`,
+    text: `${subject}\n\n${paragraphs.join('\n\n')}\n\nhttps://www.recoverystudio.cl/#/app`,
+    html: emailHtml(title, paragraphs),
+    attachments: options.attachments,
+  });
+}
+
+function cronAuthorized(req) {
+  const secret = String(process.env.CRON_SECRET || '').trim();
+  if (!secret) return false;
+  const header = String(req.headers.authorization || '');
+  return header === `Bearer ${secret}`;
+}
+
 /* ------------------------------------------------------------------ */
 /*  Router                                                             */
 /* ------------------------------------------------------------------ */
@@ -823,7 +890,7 @@ route('GET', '/api/public/reviews', 'public', () => {
 });
 
 route('POST', '/api/public/reviews', 'public', async ({ body, req, user, res }) => {
-  const ip = req.socket.remoteAddress || 'ip';
+  const ip = clientIp(req);
   if (!rateLimit(`review:${ip}`, 4, 6 * 60 * 60 * 1000)) {
     return fail(res, 429, 'Ya recibimos una reseña desde este dispositivo. Intenta nuevamente más tarde.');
   }
@@ -866,7 +933,7 @@ route('POST', '/api/public/reviews', 'public', async ({ body, req, user, res }) 
 });
 
 route('POST', '/api/auth/register', 'public', async ({ body, res, req }) => {
-  const ip = req.socket.remoteAddress || 'ip';
+  const ip = clientIp(req);
   if (!rateLimit(`register:${ip}`, 6, 30 * 60 * 1000)) return fail(res, 429, 'Demasiados intentos. Intenta más tarde.');
 
   const name = clean(body.name, 80);
@@ -895,7 +962,7 @@ route('POST', '/api/auth/login', 'public', async ({ body, res, req }) => {
   const email = lower(body.email);
   const password = String(body.password || '');
   const code = clean(body.code, 10);
-  const ip = req.socket.remoteAddress || 'ip';
+  const ip = clientIp(req);
   const key = `login:${ip}:${email}`;
   if (!rateLimit(key, 10, 10 * 60 * 1000)) return fail(res, 429, 'Demasiados intentos. Espera unos minutos e intenta de nuevo.');
 
@@ -960,7 +1027,7 @@ route('POST', '/api/auth/totp/enable', 'public', ({ body, res }) => {
 route('POST', '/api/auth/logout', 'public', ({ res }) => {
   res.writeHead(200, {
     'Content-Type': 'application/json; charset=utf-8',
-    'Set-Cookie': `${COOKIE}=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0${IS_PROD ? '; Secure' : ''}`,
+    'Set-Cookie': `${COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${IS_PROD ? '; Secure' : ''}`,
     ...SECURITY_HEADERS,
     'Cache-Control': 'no-store',
   });
@@ -1067,6 +1134,14 @@ route('POST', '/api/bookings', 'auth', async ({ body, user, res }) => {
   await notifyEvent('booking_created', 'Nueva reserva agendada', `${user.name} agendó ${service.name}.\n${humanDate(date)} a las ${time} (${modality}).\n${amount > 0 ? `Monto: ${clp(amount)}` : 'Usa sesiones de su plan.'}\nCorreo: ${user.email}`, {
     type: 'booking', id: booking.id, userId: user.id, name: user.name, date, time, service: service.name, amount,
   });
+  await notifyClient(user, 'Recibimos tu reserva', [
+    `Hola ${user.name.split(' ')[0]}, recibimos tu reserva de ${service.name}.`,
+    `Fecha: ${humanDate(date)} a las ${time} (${modality}).`,
+    amount > 0
+      ? `Monto: ${clp(amount)}. Puedes transferir y avisar el pago desde tu panel.`
+      : 'Usaremos las sesiones disponibles de tu plan.',
+    'La reserva queda por confirmar por el studio. Te avisaremos por correo cuando esté confirmada.',
+  ]);
   sendJson(res, 201, { booking, payment });
 });
 
@@ -1099,6 +1174,11 @@ route('POST', '/api/bookings/:id/reschedule', 'auth', async ({ params, body, use
   await notifyEvent('booking_rescheduled', 'Reserva reagendada', `${user.name} reagendó ${booking.serviceName}.\nAntes: ${humanDate(previous.date)} ${previous.time}.\nAhora: ${humanDate(date)} a las ${time}.`, {
     type: 'booking', id: booking.id, name: user.name, date, time,
   });
+  await notifyClient(user, 'Tu reserva fue reagendada', [
+    `Hola ${user.name.split(' ')[0]}, actualizamos tu reserva de ${booking.serviceName}.`,
+    `Nueva fecha: ${humanDate(date)} a las ${time}.`,
+    'La reserva vuelve a quedar por confirmar por el studio.',
+  ]);
   sendJson(res, 200, { booking });
 });
 
@@ -1118,6 +1198,11 @@ route('POST', '/api/bookings/:id/cancel', 'auth', async ({ params, user, res }) 
   await notifyEvent('booking_cancelled', 'Reserva cancelada', `${user.name} canceló ${booking.serviceName} del ${humanDate(booking.date)} a las ${booking.time}.`, {
     type: 'booking', id: booking.id, name: user.name, date: booking.date, time: booking.time,
   });
+  await notifyClient(user, 'Tu reserva fue cancelada', [
+    `Hola ${user.name.split(' ')[0]}, cancelamos tu reserva de ${booking.serviceName}.`,
+    `Fecha cancelada: ${humanDate(booking.date)} a las ${booking.time}.`,
+    'Si quieres agendar nuevamente, puedes hacerlo desde tu panel.',
+  ]);
   sendJson(res, 200, { booking });
 });
 
@@ -1152,6 +1237,13 @@ route('POST', '/api/orders', 'auth', async ({ body, user, res }) => {
   await notifyEvent('order_created', 'Nueva compra de plan', `${user.name} compró ${plan.name}.\nMonto: ${clp(plan.price)}.\nQueda pendiente de confirmar el pago.\nCorreo: ${user.email}`, {
     type: 'order', id: order.id, userId: user.id, name: user.name, plan: plan.name, amount: plan.price,
   });
+  const bank = db.settings.bank || {};
+  await notifyClient(user, `Recibimos tu compra: ${plan.name}`, [
+    `Hola ${user.name.split(' ')[0]}, registramos tu compra de ${plan.name} (${plan.sessions} sesiones).`,
+    `Monto a transferir: ${clp(plan.price)}.`,
+    `Datos: ${bank.bank || 'Banco'} · ${bank.accountType || 'Cuenta'} N° ${bank.accountNumber || ''} · Titular ${bank.holder || ''} · RUT ${bank.rut || ''}.`,
+    'Cuando transfieras, entra a Mi panel → Pagos y usa “Ya transferí” con el número de comprobante. El studio confirmará el pago y activará tus sesiones.',
+  ]);
   sendJson(res, 201, { order, payment });
 });
 
@@ -1331,10 +1423,11 @@ route('GET', '/api/admin/bookings', 'admin', ({ query }) => {
   return { bookings: list.map((b) => ({ ...attachUser(b), payment: db.payments.find((p) => p.id === b.paymentId) || null })) };
 });
 
-route('PATCH', '/api/admin/bookings/:id', 'admin', ({ params, body, res }) => {
+route('PATCH', '/api/admin/bookings/:id', 'admin', async ({ params, body, res }) => {
   const booking = db.bookings.find((b) => b.id === params.id);
   if (!booking) return fail(res, 404, 'Sesión no encontrada.');
   const allowed = ['pending', 'confirmed', 'attended', 'no_show', 'cancelled'];
+  const previousStatus = booking.status;
   if (body.status) {
     if (!allowed.includes(body.status)) return fail(res, 400, 'Estado inválido.');
     const previous = booking.status;
@@ -1355,10 +1448,30 @@ route('PATCH', '/api/admin/bookings/:id', 'admin', ({ params, body, res }) => {
     }
   }
   scheduleSave();
+
+  const client = db.users.find((u) => u.id === booking.userId);
+  if (body.status && body.status !== previousStatus && client) {
+    if (body.status === 'confirmed') {
+      await notifyClient(client, 'Tu sesión está confirmada', [
+        `Hola ${client.name.split(' ')[0]}, tu sesión de ${booking.serviceName} quedó confirmada.`,
+        `Fecha: ${humanDate(booking.date)} a las ${booking.time} (${booking.modality}).`,
+        booking.amount > 0 && booking.paymentStatus !== 'paid'
+          ? `Recuerda completar el pago de ${clp(booking.amount)} por transferencia y avisarlo en tu panel.`
+          : 'Nos vemos en el studio. Si necesitas reagendar, hazlo con anticipación desde tu panel.',
+      ]);
+    } else if (body.status === 'cancelled') {
+      await notifyClient(client, 'Tu sesión fue cancelada', [
+        `Hola ${client.name.split(' ')[0]}, cancelamos tu sesión de ${booking.serviceName}.`,
+        `Fecha: ${humanDate(booking.date)} a las ${booking.time}.`,
+        'Si tienes dudas o quieres agendar nuevamente, responde este correo o entra a tu panel.',
+      ]);
+    }
+  }
+
   sendJson(res, 200, { booking: attachUser(booking) });
 });
 
-route('POST', '/api/admin/bookings/:id/reschedule', 'admin', ({ params, body, res }) => {
+route('POST', '/api/admin/bookings/:id/reschedule', 'admin', async ({ params, body, res }) => {
   const booking = db.bookings.find((b) => b.id === params.id);
   if (!booking) return fail(res, 404, 'Sesión no encontrada.');
   if (['cancelled', 'attended'].includes(booking.status)) return fail(res, 400, 'No se puede reagendar una sesión cerrada.');
@@ -1373,6 +1486,17 @@ route('POST', '/api/admin/bookings/:id/reschedule', 'admin', ({ params, body, re
   booking.history.push({ at: nowISO(), action: 'rescheduled', by: 'admin', previous });
   booking.updatedAt = nowISO();
   scheduleSave();
+
+  const client = db.users.find((u) => u.id === booking.userId);
+  if (client) {
+    await notifyClient(client, 'Tu sesión fue reagendada', [
+      `Hola ${client.name.split(' ')[0]}, movimos tu sesión de ${booking.serviceName}.`,
+      `Antes: ${humanDate(previous.date)} a las ${previous.time}.`,
+      `Ahora: ${humanDate(date)} a las ${time}.`,
+      'Tu reserva quedó confirmada en el nuevo horario.',
+    ]);
+  }
+
   sendJson(res, 200, { booking: attachUser(booking) });
 });
 
@@ -1413,6 +1537,20 @@ route('PATCH', '/api/admin/payments/:id', 'admin', async ({ params, body, res })
       `${paymentConcept(payment)} · ${clp(payment.amount)}.\nCliente: ${paymentUser(payment)?.name || 'Sin cliente'}.\nEstado: ${body.status === 'confirmed' ? 'confirmado' : 'rechazado'}.`,
       { type: 'payment', id: payment.id, amount: payment.amount },
     );
+    const client = paymentUser(payment);
+    if (client) {
+      await notifyClient(client, body.status === 'confirmed' ? 'Pago confirmado' : 'Pago rechazado', body.status === 'confirmed'
+        ? [
+          `Hola ${client.name.split(' ')[0]}, confirmamos tu pago de ${clp(payment.amount)} por ${paymentConcept(payment)}.`,
+          payment.kind === 'booking'
+            ? 'Tu sesión ya cuenta con el pago registrado.'
+            : 'Las sesiones de tu plan ya están disponibles en tu panel.',
+        ]
+        : [
+          `Hola ${client.name.split(' ')[0]}, no pudimos confirmar tu pago de ${clp(payment.amount)} por ${paymentConcept(payment)}.`,
+          'Revisa el comprobante o la referencia ingresada y vuelve a informarlo desde tu panel. Si tienes dudas, responde este correo.',
+        ]);
+    }
   }
   sendJson(res, 200, { payment });
 });
@@ -1917,6 +2055,7 @@ route('GET', '/api/admin/settings', 'admin', ({ user }) => {
     settings: safe,
     totpEnabled: !!user.totpEnabled,
     channels: notifyPreferences(),
+    clientEmail: clientEmailStatus(),
     security: {
       email: user.email,
       lastLoginAt: user.lastLoginAt || null,
@@ -1959,7 +2098,7 @@ route('PATCH', '/api/admin/settings', 'admin', ({ body, res }) => {
   }
   scheduleSave();
   const { sessionSecret, ...safe } = db.settings;
-  sendJson(res, 200, { settings: safe, channels: notifyPreferences() });
+  sendJson(res, 200, { settings: safe, channels: notifyPreferences(), clientEmail: clientEmailStatus() });
 });
 
 /* ------------------------ Bandeja de notificaciones ----------------- */
@@ -2139,6 +2278,86 @@ route('GET', '/api/admin/export/honorarios.csv', 'admin', ({ query, res }) => {
   sendCsv(res, `honorarios-${key}.csv`, [['N°', 'Fecha', 'Cliente', 'Monto bruto', 'Retención', 'Neto', 'Notas'], ...rows]);
 });
 
+/* ------------------------------ Respaldos -------------------------- */
+
+route('GET', '/api/admin/export/db.json', 'admin', ({ res }) => {
+  const body = JSON.stringify(db, null, 2);
+  res.writeHead(200, {
+    'Content-Type': 'application/json; charset=utf-8',
+    'Content-Disposition': `attachment; filename="recovery-studio-backup-${localDateStr()}.json"`,
+    ...SECURITY_HEADERS, 'Cache-Control': 'no-store',
+  });
+  res.end(body);
+});
+
+/* ------------------------------- Crons ----------------------------- */
+
+route('GET', '/api/cron/reminders', 'public', async ({ req, res }) => {
+  if (!cronAuthorized(req)) return fail(res, 401, 'No autorizado.');
+
+  const tomorrow = addDaysLocal(localDateStr(), 1);
+  const list = db.bookings
+    .filter((b) => b.date === tomorrow && ['pending', 'confirmed'].includes(b.status))
+    .sort((a, b) => `${a.time}`.localeCompare(`${b.time}`));
+
+  const summary = list.length
+    ? list.map((b) => {
+      const client = db.users.find((u) => u.id === b.userId);
+      return `· ${b.time} — ${client?.name || 'Cliente'} · ${b.serviceName} (${b.status === 'confirmed' ? 'confirmada' : 'por confirmar'})`;
+    }).join('\n')
+    : 'No hay sesiones agendadas para mañana.';
+
+  await notifyEvent(
+    'reminder_daily',
+    `Agenda de mañana · ${humanDate(tomorrow)}`,
+    `${list.length} ${list.length === 1 ? 'sesión' : 'sesiones'} para mañana.\n\n${summary}`,
+    { type: 'reminder', date: tomorrow, total: list.length },
+  );
+
+  let sent = 0;
+  let off = 0;
+  let skipped = 0;
+  for (const booking of list) {
+    const slot = `${booking.date} ${booking.time}`;
+    if (booking.reminderSentFor === slot) { skipped += 1; continue; }
+    const client = db.users.find((u) => u.id === booking.userId);
+    if (!client) { skipped += 1; continue; }
+    const result = await notifyClient(client, 'Recordatorio de tu sesión', [
+      `Hola ${client.name.split(' ')[0]}, te recordamos tu sesión de ${booking.serviceName}.`,
+      `Fecha: ${humanDate(booking.date)} a las ${booking.time} (${booking.modality}).`,
+      booking.status === 'confirmed'
+        ? 'Tu sesión está confirmada. Si no puedes asistir, revisa la política de cancelación en tu panel.'
+        : 'Tu sesión está por confirmar por el studio. Te avisaremos si cambia algo.',
+    ]);
+    booking.reminderSentFor = slot;
+    booking.reminderSentAt = nowISO();
+    if (result.status === 'sent') sent += 1;
+    else if (result.status === 'off') off += 1;
+    else skipped += 1;
+  }
+  scheduleSave();
+
+  sendJson(res, 200, { ok: true, date: tomorrow, total: list.length, sent, off, skipped });
+});
+
+route('GET', '/api/cron/backup', 'public', async ({ req, res }) => {
+  if (!cronAuthorized(req)) return fail(res, 401, 'No autorizado.');
+
+  const json = JSON.stringify(db, null, 2);
+  const filename = `recovery-studio-backup-${localDateStr()}.json`;
+  const result = await deliver({
+    subject: `[${db.settings.studioName}] Respaldo diario ${localDateStr()}`,
+    text: `Respaldo diario de la base de datos.\n\nArchivo: ${filename}\nTamaño: ${json.length} bytes\nUsuarios: ${db.users.length}\nReservas: ${db.bookings.length}\nPagos: ${db.payments.length}`,
+    attachments: [{ filename, content: Buffer.from(json, 'utf8').toString('base64') }],
+    settings: db.settings,
+  });
+
+  if (result.email.status !== 'sent') {
+    return fail(res, 503, `No se pudo enviar el respaldo: ${result.email.reason || result.email.status}`);
+  }
+  sendJson(res, 200, { ok: true, filename, bytes: json.length, email: result.email.status });
+});
+
 
 /* ------------------------------------------------------------------ */
 
@@ -2227,7 +2446,7 @@ async function handleRequest(req, res) {
     let body = {};
     if (['POST', 'PATCH', 'PUT', 'DELETE'].includes(req.method)) body = await readBody(req);
 
-    const ctx = { req, res, params: found.params, query: url.searchParams, body, user, ip: req.socket.remoteAddress };
+    const ctx = { req, res, params: found.params, query: url.searchParams, body, user, ip: clientIp(req) };
     const result = await found.route.handler(ctx);
     if (!res.writableEnded) {
       if (result !== undefined) sendJson(res, 200, result);

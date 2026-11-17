@@ -78,7 +78,7 @@ export function siteFooter(landing = false) {
             <p>Kinesiología, asesorías y planes de ejercicio para recuperar tu movimiento con acompañamiento cercano y profesional.</p>
           </div>
           <div class="footer-col">
-            <h4>Explorar</h4>
+            <h2>Explorar</h2>
             ${explore('servicios', 'Servicios')}
             ${explore('planes', 'Planes')}
             <a href="#/resenas">Reseñas</a>
@@ -86,7 +86,7 @@ export function siteFooter(landing = false) {
             ${explore('pagos', 'Pagos y política')}
           </div>
           <div class="footer-col">
-            <h4>Contacto</h4>
+            <h2>Contacto</h2>
             <a href="mailto:${esc(cfg?.email || 'recoverystudio7@gmail.com')}">${esc(cfg?.email || 'recoverystudio7@gmail.com')}</a>
             ${me ? `<a href="${me.role === 'admin' ? '#/admin' : '#/app'}">Mi panel</a>` : '<a href="#/login">Ingresar</a><a href="#/registro">Crear cuenta</a>'}
           </div>
@@ -110,6 +110,7 @@ export function renderLanding() {
   $('#app').innerHTML = `
     ${siteHeader('inicio')}
 
+    <main id="contenido">
     <section class="hero">
       <div class="container hero-grid">
         <div class="hero-copy">
@@ -305,6 +306,7 @@ export function renderLanding() {
         </div>
       </div>
     </section>
+    </main>
 
     ${siteFooter(true)}`;
 

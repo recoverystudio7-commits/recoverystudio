@@ -3,7 +3,7 @@
    ========================================================================== */
 
 import {
-  $, state, api, toast, esc, icon, qrSvg, bindCopyButtons, go, openModal, closeModal,
+  $, state, api, toast, esc, icon, renderQrInto, bindCopyButtons, go, openModal, closeModal,
 } from './core.js';
 
 export function routeAfterLogin() {
@@ -161,7 +161,7 @@ function renderTotpSetupCard(data, onSuccess) {
       <h1 style="font-size:23px">Activa tu authenticator</h1>
       <p class="sub">Protege el acceso de administrador. Escanea el código con Google Authenticator, Authy o Microsoft Authenticator y luego ingresa el código de 6 dígitos.</p>
       <div class="totp-box">
-        <div class="qr-frame" id="qr-frame">${qrSvg(data.otpauth)}</div>
+        <div class="qr-frame" id="qr-frame"><span class="qr-loading">Generando QR…</span></div>
         <div class="secret-chip">
           <span id="secret-text">${esc(data.secret)}</span>
           <button class="copy-btn" type="button" data-copy="${esc(data.secret)}">${icon('copy')}</button>
@@ -183,6 +183,7 @@ function renderTotpSetupCard(data, onSuccess) {
       <p class="auth-legal">Guarda tu clave de respaldo en un lugar seguro. Si pierdes el acceso, el administrador puede restablecerlo desde el servidor.</p>
     </div>`;
   bindCopyButtons();
+  renderQrInto($('#qr-frame'), data.otpauth);
   const error = $('#totp-error');
   $('#totp-form').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -217,7 +218,7 @@ export function showTotpSetupModal(data, onDone) {
     body: `
       <div class="totp-box">
         <div style="display:grid;grid-template-columns:190px 1fr;gap:20px;align-items:center" class="totp-modal-grid">
-          <div class="qr-frame">${qrSvg(data.otpauth)}</div>
+          <div class="qr-frame" id="qr-modal-frame"><span class="qr-loading">Generando QR…</span></div>
           <div>
             <p class="small muted" style="margin-bottom:8px">1. Abre Google Authenticator, Authy o Microsoft Authenticator.</p>
             <p class="small muted" style="margin-bottom:12px">2. Escanea el código o agrega esta clave manualmente:</p>
@@ -234,6 +235,7 @@ export function showTotpSetupModal(data, onDone) {
              <button class="btn sm" type="button" id="modal-totp-submit">Activar authenticator</button>`,
     onMount(modal) {
       bindCopyButtons(modal);
+      renderQrInto($('#qr-modal-frame', modal), data.otpauth);
       $('#modal-totp-cancel', modal).onclick = () => closeModal();
       const error = $('#modal-totp-error', modal);
       $('#modal-totp-submit', modal).onclick = async (e) => {

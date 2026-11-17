@@ -6,6 +6,22 @@
   <meta name="theme-color" content="#0a2540" />
   <meta name="description" content="Recovery Studio · Kinesiología, asesorías y planes de movimiento personalizados. Agenda online, planes a medida y seguimiento." />
   <title>Recovery Studio · Kinesiología y movimiento</title>
+  <link rel="canonical" href="https://www.recoverystudio.cl/" />
+  <meta name="robots" content="index,follow" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Recovery Studio" />
+  <meta property="og:locale" content="es_CL" />
+  <meta property="og:title" content="Recovery Studio · Kinesiología y movimiento" />
+  <meta property="og:description" content="Kinesiología, asesorías 1 a 1 y planes de ejercicio a tu medida. Agenda online y seguimiento real de tu recuperación." />
+  <meta property="og:url" content="https://www.recoverystudio.cl/" />
+  <meta property="og:image" content="https://www.recoverystudio.cl/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="Recovery Studio · Kinesiología y movimiento" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Recovery Studio · Kinesiología y movimiento" />
+  <meta name="twitter:description" content="Kinesiología, asesorías 1 a 1 y planes de ejercicio a tu medida. Agenda online y seguimiento real de tu recuperación." />
+  <meta name="twitter:image" content="https://www.recoverystudio.cl/og-image.png" />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <link rel="alternate icon" href="/icons/favicon-32.png" type="image/png" sizes="32x32" />
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" sizes="180x180" />
@@ -13,13 +29,81 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Recovery Studio" />
-  <link rel="stylesheet" href="/styles.css?v=3" />
+  <link rel="modulepreload" href="/js/core.js" />
+  <link rel="modulepreload" href="/js/landing.js" />
+  <link rel="stylesheet" href="/styles.css?v=4" />
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "HealthAndBeautyBusiness",
+      "name": "Recovery Studio",
+      "description": "Kinesiología, asesorías 1 a 1 y planes de movimiento personalizados, con agenda online y seguimiento.",
+      "url": "https://www.recoverystudio.cl/",
+      "image": "https://www.recoverystudio.cl/og-image.png",
+      "email": "recoverystudio7@gmail.com",
+      "priceRange": "$35.000 - $150.000",
+      "address": { "@type": "PostalAddress", "addressCountry": "CL" },
+      "areaServed": "Chile",
+      "sameAs": []
+    }
+  </script>
 </head>
 <body>
-  <div id="app" aria-live="polite"></div>
+  <a class="skip-link" href="#contenido">Saltar al contenido</a>
+  <div id="app" aria-live="polite">
+    <!-- Contenido estático de la portada: se reemplaza por la app al cargar. -->
+    <main id="contenido">
+      <section class="hero">
+        <div class="container hero-grid">
+          <div class="hero-copy">
+            <div class="eyebrow">Kinesiología · movimiento · recuperación</div>
+            <h1>Vuelve a moverte <em>sin dolor</em>.</h1>
+            <p class="hero-lead">Kinesiología, asesorías 1 a 1 y planes de ejercicio diseñados para tu objetivo. Agenda online, sigue tus sesiones y avanza con acompañamiento real.</p>
+            <div class="hero-actions">
+              <a class="btn lg" href="#/login">Agendar sesión</a>
+              <a class="btn ghost lg" href="#/login">Ver planes</a>
+            </div>
+            <div class="hero-trust">
+              <span>Atención personalizada</span>
+              <span>Agenda online</span>
+              <span>Planes a medida</span>
+            </div>
+          </div>
+          <div class="hero-visual" aria-hidden="true">
+            <div class="hero-ring two"></div>
+            <div class="hero-ring"></div>
+            <div class="hero-glow"></div>
+            <div class="hero-card">
+              <div class="eyebrow light">Recovery Studio</div>
+              <div class="wordmark">Muévete<br><span>con confianza.</span></div>
+              <p>Un plan claro, sesiones confirmadas y seguimiento en cada etapa de tu recuperación.</p>
+              <div class="mini-rule"></div>
+              <div class="mini-row"><span>Evaluación inicial</span><b>60 min</b></div>
+              <div class="mini-row"><span>Asesorías 1 a 1</span><b>Presencial / online</b></div>
+              <div class="mini-row"><span>Planes de sesiones</span><b>Desde $35.000</b></div>
+            </div>
+            <div class="float-card fc-1">
+              <span class="dot"></span>
+              <div><b>Sesión confirmada</b><span>Mañana · 10:00</span></div>
+            </div>
+            <div class="float-card fc-2">
+              <div class="progress-mini"><i></i></div>
+              <div><b>Plan activo</b><span>Sesiones disponibles</span></div>
+            </div>
+            <div class="float-card fc-3">
+              <span class="dot orange"></span>
+              <div><b>Rutina del día</b><span>Lista en tu panel</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <noscript>
+    <p style="padding:24px;text-align:center">Recovery Studio necesita JavaScript para mostrar la agenda y el panel. También puedes escribir a <a href="mailto:recoverystudio7@gmail.com">recoverystudio7@gmail.com</a>.</p>
+  </noscript>
   <div id="modal-root"></div>
   <div id="toast-root" class="toast-root" aria-live="assertive"></div>
-  <script src="/vendor/qrcode.js"></script>
-  <script type="module" src="/app.js?v=3"></script>
+  <script type="module" src="/app.js?v=4"></script>
 </body>
 </html>

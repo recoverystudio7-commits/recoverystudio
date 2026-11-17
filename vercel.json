@@ -19,6 +19,10 @@
       "memory": 1024
     }
   },
+  "crons": [
+    { "path": "/api/cron/reminders", "schedule": "0 12 * * *" },
+    { "path": "/api/cron/backup", "schedule": "0 6 * * *" }
+  ],
   "headers": [
     {
       "source": "/sw.js",

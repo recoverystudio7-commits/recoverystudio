@@ -202,7 +202,8 @@ export async function pageAdminConfig(content) {
             <span class="badge ${channels.whatsapp?.configured ? 'success' : 'muted'}">${channels.whatsapp?.configured ? 'Listo' : 'Sin configurar'}</span>
           </label>
           <button class="btn ghost sm" type="button" id="test-channels" style="margin-top:8px">${icon('send')} Enviar prueba</button>
-          <div class="form-note" style="margin-top:12px;margin-bottom:0">Las credenciales se configuran en Vercel. Mientras falten, los avisos igual quedan guardados en <a href="#/admin/notificaciones">Notificaciones</a>.</div>
+          <div class="form-note" style="margin-top:12px;margin-bottom:0">Correos a clientes: <b>${data.clientEmail?.configured ? 'activos' : 'pendientes'}</b>. ${data.clientEmail?.configured ? 'Se envían confirmaciones y recordatorios automáticos.' : 'Para enviarlos, verifica un dominio en Resend y configura RESEND_CLIENT_FROM en Vercel.'}</div>
+          <div class="form-note" style="margin-top:8px;margin-bottom:0">Las credenciales se configuran en Vercel. Mientras falten, los avisos igual quedan guardados en <a href="#/admin/notificaciones">Notificaciones</a>.</div>
         </div>
 
         <div class="card settings-card span-2" style="display:flex;justify-content:space-between;gap:16px;align-items:center;flex-wrap:wrap">
@@ -229,12 +230,13 @@ export async function pageAdminConfig(content) {
       </div>
       <div class="card settings-card">
         <h3>Respaldo y exportaciones</h3>
-        <p>Descarga la información de pagos y boletas para tu contabilidad.</p>
+        <p>Descarga la información de pagos y boletas, o un respaldo completo de la base.</p>
         <div class="inline-actions">
+          <a class="btn ghost sm" href="/api/admin/export/db.json" download>${icon('download')} Respaldo JSON</a>
           <a class="btn ghost sm" href="/api/admin/export/boletas.csv" download>${icon('download')} Boletas CSV</a>
           <a class="btn ghost sm" href="/api/admin/export/pagos.csv" download>${icon('download')} Pagos CSV</a>
         </div>
-        <div class="alert info" style="margin-top:16px">${icon('shield')}<div>La base de datos se guarda en <b>Redis (Vercel)</b> o en <b>data/db.json</b> si usas el servidor local. Realiza copias de seguridad periódicas.</div></div>
+        <div class="alert info" style="margin-top:16px">${icon('shield')}<div>La base de datos se guarda en <b>Redis (Vercel)</b>. Además, un respaldo JSON se envía automáticamente cada día al correo de avisos.</div></div>
         <p class="footer-note">Los CSV usan separador “;” y codificación UTF-8 con BOM para abrir correctamente en Excel.</p>
       </div>
     </div>

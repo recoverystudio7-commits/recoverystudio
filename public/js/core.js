@@ -248,6 +248,30 @@ export function confirmDialog({ title, message, confirmText = 'Confirmar', dange
 
 /* --------------------------------- QR ----------------------------------- */
 
+let qrLibPromise = null;
+
+/** Carga el generador de QR solo cuando hace falta (configuración de TOTP). */
+export function loadQrLib() {
+  if (typeof window.qrcode === 'function') return Promise.resolve();
+  if (!qrLibPromise) {
+    qrLibPromise = new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = '/vendor/qrcode.js';
+      script.async = true;
+      script.onload = () => {
+        if (typeof window.qrcode === 'function') resolve();
+        else reject(new Error('El generador de QR no se inicializó.'));
+      };
+      script.onerror = () => reject(new Error('No se pudo cargar el generador de QR.'));
+      document.head.appendChild(script);
+    }).catch((err) => {
+      qrLibPromise = null;
+      throw err;
+    });
+  }
+  return qrLibPromise;
+}
+
 export function qrSvg(text) {
   try {
     if (typeof window.qrcode !== 'function') return '';
@@ -258,6 +282,18 @@ export function qrSvg(text) {
   } catch {
     return '';
   }
+}
+
+/** Rellena un contenedor con el QR cuando la librería termina de cargar. */
+export async function renderQrInto(element, text) {
+  if (!element) return;
+  try {
+    await loadQrLib();
+  } catch {
+    element.textContent = 'No pudimos generar el QR. Usa la clave manual.';
+    return;
+  }
+  if (element.isConnected) element.innerHTML = qrSvg(text);
 }
 
 /* ------------------------------- Estados -------------------------------- */

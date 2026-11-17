@@ -1,10 +1,11 @@
 /* ==========================================================================
    Recovery Studio · service worker
-   Estrategia: red primero para navegación, caché de respaldo para el shell.
+   Estrategia: red primero para navegación y estáticos, con caché de respaldo.
+   El shell es mínimo: los módulos del panel y qrcode se cachean al usarse.
    Las llamadas /api nunca se guardan en caché.
    ========================================================================== */
 
-const VERSION = 'rs-v4-2026-11';
+const VERSION = 'rs-v5-2026-11';
 const SHELL = [
   '/',
   '/index.html',
@@ -12,16 +13,6 @@ const SHELL = [
   '/app.js',
   '/js/core.js',
   '/js/landing.js',
-  '/js/reviews.js',
-  '/js/auth.js',
-  '/js/user.js',
-  '/js/user-extra.js',
-  '/js/admin.js',
-  '/js/admin-catalog.js',
-  '/js/admin-ops.js',
-  '/js/admin-finance.js',
-  '/js/admin-notify.js',
-  '/vendor/qrcode.js',
   '/favicon.svg',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
@@ -67,6 +58,7 @@ self.addEventListener('fetch', (event) => {
   }
 
   // Estáticos: red primero para reflejar cada despliegue, caché como respaldo.
+  // Aquí entran también los módulos bajo demanda (panel, cliente y qrcode).
   event.respondWith(
     fetch(request)
       .then((response) => {
